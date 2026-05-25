@@ -35,4 +35,4 @@ diagram in ~50 lines. The design philosophy
 sysatlas relates to the broader literature — C4, ArchiMate, UML, BPMN,
 ISO 42010 — are in [`docs/state-of-the-art.md`](docs/state-of-the-art.md).
 
-MIT licensed.
+Apache 2.0 licensed.
