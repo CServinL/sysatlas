@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "sysatlas"
+version = "0.1.0"
+description = "Interactive system and architecture diagram library"
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["architecture", "diagram", "topology", "visualization", "drawio"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Scientific/Engineering :: Visualization",
+]
+dependencies = ["networkx>=3.0", "pydantic>=2.0"]
+
+[project.urls]
+Homepage = "https://github.com/CServinL/sysatlas"
+Repository = "https://github.com/CServinL/sysatlas"
+Issues = "https://github.com/CServinL/sysatlas/issues"
