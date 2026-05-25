@@ -99,8 +99,9 @@ class SystemMap:
         if viewer == "local":
             copy_local_viewer(os.path.dirname(os.path.abspath(path)))
 
-    def _to_xml(self) -> str:
-        return build_xml(self._nodes, self._edges, self._groups, self._layer_order)
+    def _to_xml(self, extra_edges: list[dict] | None = None) -> str:
+        return build_xml(self._nodes, self._edges, self._groups, self._layer_order,
+                         extra_edges=extra_edges)
 
     @staticmethod
     def save_collection(diagrams: dict[str, "SystemMap"], path: str, title: str = "", viewer: str = "cdn") -> None:

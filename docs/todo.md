@@ -34,25 +34,41 @@ demand.
 
 ## Next up
 
-All four follow-ups from the previous round shipped:
+All four follow-ups from the AD round shipped:
 
 - **AD builder** (`sysatlas.System`) ✓
 - **Quality badges** on nodes ✓ (filtered to criticality ≥ high)
 - **Cross-view stubs** ✓ (auto-detected on `System.save()`)
 - **Trace links rendered** ✓ (dashed purple connectors within a view)
 
-Still open from earlier:
+All four follow-ups from the polish round shipped:
 
-- **Trace matrix view-kind** — a tabular sources × targets render for
-  audit-style trace analysis.
-- **Builder ergonomics for non-architecture model kinds** — a SystemMap-
-  like fluent builder for ER, sequence, class, etc. (today only
-  `architecture_model()` is wired into the System builder).
-- **Quality badges on edges** — currently only nodes get badges.
-- **Render-only render** for trace links — they currently re-enter the
-  Sugiyama layout (because we inject them as Connections), so they can
-  shift the layout. Move them to an overlay pass that runs after layout
-  is fixed.
+- **Tree diagram end-to-end** ✓ — `sysatlas.TreeMap`, Reingold-Tilford
+  top-down layout, draw.io render. Validates that the
+  ontology + builder + render pattern replicates beyond C4.
+- **Traces as post-layout overlay** ✓ — overlays no longer enter the
+  Sugiyama Connection list; they are rendered as straight dashed edges
+  between known node positions after layout is fixed.
+- **Quality badges on edges** ✓ — `Connection.qualities` now render as
+  ISO 25010 badges adjacent to the edge label.
+- **Trace matrix view-kind** ✓ — `System.save_trace_matrix(path)` emits
+  an HTML matrix of sources × targets with coloured kind tags + legend.
+
+## Advanced backlog
+
+- **Clickable / toggleable layer visibility** — draw.io has native
+  layer toggling in its viewer toolbar (`layers` already in
+  `_VIEWER_CONFIG`). Mapping our `layer_order` to mxGraph layers would
+  let users show/hide tiers (`edge`, `services`, `data`, …) per view.
+  Coexistence with the swim-lane groups needs design work — groups are
+  cells, layers are parent-of-cells.
+- **Builder ergonomics for non-architecture model kinds** — `TreeMap`
+  set the pattern. Repeat for ER, sequence, UML class, state machine,
+  BPMN (order in *Ontology readiness matrix* below).
+- **Render-only stub placement** — stubs currently land wherever
+  Sugiyama puts a node with no connections (i.e. arbitrary). Could be
+  pinned to the edge of the canvas closest to where the trace overlay
+  points.
 
 ---
 
@@ -64,29 +80,28 @@ diagram ontologies have schemas but no builder and no render pipeline.
 | Ontology | Pydantic schema | Fluent builder | HTML render |
 |---|:---:|:---:|:---:|
 | architecture (C4 container) | ✓ | ✓ `SystemMap` / `System` | ✓ |
+| tree | ✓ | ✓ `TreeMap` | ✓ |
 | er | ✓ | ✗ | ✗ |
 | sequence | ✓ | ✗ | ✗ |
 | uml_class | ✓ | ✗ | ✗ |
 | state_machine | ✓ | ✗ | ✗ |
 | bpmn | ✓ | ✗ | ✗ |
-| tree | ✓ | ✗ | ✗ |
 | iso42010 (cross-cutting) | ✓ | ✓ (via `System`) | partial (multi-tab) |
 | trace links (cross-cutting) | ✓ | ✓ (via `System.trace()`) | ✓ (dashed connectors) |
 | qualities (cross-cutting) | ✓ | ✓ (Pydantic on Component/Connection) | ✓ (badges) |
 
 ### Recommended order to extend coverage
 
-When we decide to bring more diagram kinds end-to-end, do them in this
-order — easier layouts and simpler renders first:
+Tree shipped. Remaining order — easier layouts and simpler renders first:
 
 | Order | Ontology | Natural layout | Render complexity | Reason |
 |---|---|---|---|---|
-| 1 | tree | Reingold-Tilford or radial | low | only parent→child, no cycles; covers org chart + mindmap + taxonomy |
-| 2 | sequence | fixed vertical lifelines, time on Y | medium | lifelines are fixed columns; messages = horizontal arrows |
-| 3 | er | force-directed or layered | medium | similar shape to architecture; attributes inside boxes |
-| 4 | state_machine | force-directed | medium | composite states add nesting complexity |
-| 5 | uml_class | hierarchical (inheritance) or force | high | compartments (attrs, methods), 6 relation kinds, multiplicities |
-| 6 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
+| ~~1~~ | ~~tree~~ | ~~Reingold-Tilford~~ | ~~low~~ | **shipped** |
+| 1 | sequence | fixed vertical lifelines, time on Y | medium | lifelines are fixed columns; messages = horizontal arrows |
+| 2 | er | force-directed or layered | medium | similar shape to architecture; attributes inside boxes |
+| 3 | state_machine | force-directed | medium | composite states add nesting complexity |
+| 4 | uml_class | hierarchical (inheritance) or force | high | compartments (attrs, methods), 6 relation kinds, multiplicities |
+| 5 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
 
 The shared `_layout`, `_route`, `_place` primitives are reusable for any
 of these once the per-ontology builder + style mapping is written.

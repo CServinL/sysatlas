@@ -68,7 +68,17 @@ def _palette(groups: dict[str, dict]) -> dict[str, str]:
     return colors
 
 
-def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict], layer_order: list[str], debug: bool = False) -> str:
+def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict],
+              layer_order: list[str], debug: bool = False,
+              extra_edges: list[dict] | None = None) -> str:
+    """Build mxGraph XML.
+
+    `extra_edges` are appended AFTER the main layout/routing is done.
+    They get rendered as straight dashed edges between known node positions
+    without influencing the Sugiyama layer assignment. Each entry has
+    `source`, `target`, optional `label`, optional `style`, optional `color`.
+    """
+    extra_edges = extra_edges or []
     colors = _palette(groups)
     pos, waypoints, node_heights = compute_layout(nodes, edges, layer_order, debug=debug)
 
@@ -275,6 +285,59 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
                 ET.SubElement(lbl_geo, "mxPoint", x=str(ldx), y=str(ldy), **{"as": "offset"})
                 # remove the value from the parent cell so it's not rendered twice
                 cell.set("value", "")
+
+        # quality-attribute badges on the edge: appended next to the label
+        edge_badges = _badge_qualities(edge.get("qualities", []))
+        if edge_badges:
+            lx = route.get("label_x", 0.0)
+            base_dx = route.get("label_dx", 0)
+            base_dy = route.get("label_dy", -10)
+            # stack badges to the right of (or above) the label
+            for k, qa in enumerate(edge_badges):
+                cat = qa.get("category", "functional_suitability")
+                color = _QUALITY_COLOR.get(cat, "#64748b")
+                letter = _QUALITY_LETTER.get(cat, "?")
+                # offset perpendicular/parallel to the label
+                off_dx = base_dx + (k + 1) * (_BADGE_SIZE + _BADGE_GAP)
+                off_dy = base_dy
+                badge = ET.SubElement(
+                    root, "mxCell",
+                    id=str(cell_id + 20000 + k), value=letter,
+                    style=_BADGE_STYLE.format(fill=color),
+                    vertex="1", connectable="0", parent=str(cell_id),
+                )
+                bgeo = ET.SubElement(
+                    badge, "mxGeometry",
+                    x=str(round(lx, 4)), y="0", relative="1",
+                    width=str(_BADGE_SIZE), height=str(_BADGE_SIZE),
+                    **{"as": "geometry"},
+                )
+                ET.SubElement(bgeo, "mxPoint", x=str(off_dx), y=str(off_dy),
+                              **{"as": "offset"})
+        cell_id += 1
+
+    # Overlay extra_edges (trace links, etc.) — straight dashed lines between
+    # known component cells. They are not part of the layout so they do not
+    # influence Sugiyama; here we just append them to the rendered XML.
+    for extra in extra_edges:
+        src = node_cell_ids.get(extra["source"])
+        tgt = node_cell_ids.get(extra["target"])
+        if not src or not tgt:
+            continue
+        style = extra.get(
+            "style",
+            "rounded=0;dashed=1;strokeColor=#9333ea;strokeWidth=1.5;"
+            "exitX=0.5;exitY=0.5;exitDx=0;exitDy=0;"
+            "entryX=0.5;entryY=0.5;entryDx=0;entryDy=0;"
+            "fontSize=10;fontColor=#7e22ce;"
+        )
+        cell = ET.SubElement(
+            root, "mxCell",
+            id=str(cell_id), value=extra.get("label", ""),
+            style=style,
+            edge="1", source=src, target=tgt, parent="1",
+        )
+        ET.SubElement(cell, "mxGeometry", relative="1", **{"as": "geometry"})
         cell_id += 1
 
     return ET.tostring(root_el, encoding="unicode", xml_declaration=False)

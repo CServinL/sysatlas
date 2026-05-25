@@ -166,8 +166,8 @@ class System:
                 continue
 
             self._inject_stubs(primary, view_name, component_view)
-            self._inject_traces(primary, view, component_view)
-            xmls[view_name] = primary._to_xml()
+            extras = self._collect_trace_overlays(primary, view, component_view)
+            xmls[view_name] = primary._to_xml(extra_edges=extras)
 
         # If no views were declared, fall back to rendering every architecture model
         # as its own tab so the user still gets something usable.
@@ -180,24 +180,21 @@ class System:
         if viewer == "local":
             copy_local_viewer(os.path.dirname(os.path.abspath(path)))
 
-    def _inject_traces(self, sm: SystemMap, view: View,
-                       component_view: dict[str, str]) -> None:
-        """For each trace link whose endpoints (after stub-injection) live
-        in this view, add a dashed connection so it shows in the render."""
+    def _collect_trace_overlays(self, sm: SystemMap, view: View,
+                                component_view: dict[str, str]) -> list[dict]:
+        """For each trace link whose endpoints can be reached in this view,
+        return an overlay edge spec. Endpoints not local but defined in
+        another view are added as stubs so the overlay has somewhere to land.
+
+        Crucially, overlays are NOT added to the SystemMap's connections list,
+        so they don't influence Sugiyama. They are appended at render time as
+        post-layout dashed edges between known cells.
+        """
         local_components = set(sm.diagram.components.keys())
-        view_models = set(view.models)
+        overlays: list[dict] = []
         for link in self._traces:
-            # endpoint is "in this view" if either:
-            # (a) the entity already exists in the local SystemMap, or
-            # (b) the entity's defining view is part of this view's models,
-            #     or it can be added as a stub from another view.
             for end in (link.source, link.target):
                 if end.entity in local_components:
-                    continue
-                if end.model in view_models:
-                    # entity declared in a model that belongs to this view;
-                    # stub injection above should have added it. If not,
-                    # skip this trace.
                     continue
                 origin = component_view.get(end.entity)
                 if origin and origin != view.name:
@@ -205,10 +202,12 @@ class System:
                     local_components.add(end.entity)
             if (link.source.entity in local_components
                     and link.target.entity in local_components):
-                sm.connect(
-                    link.source.entity, link.target.entity,
-                    label=link.kind, style="dashed", color="#9333ea",
-                )
+                overlays.append({
+                    "source": link.source.entity,
+                    "target": link.target.entity,
+                    "label":  link.kind,
+                })
+        return overlays
 
     @staticmethod
     def _inject_stubs(sm: SystemMap, view_name: str,
@@ -225,6 +224,17 @@ class System:
                 if origin and origin != view_name:
                     sm.add_component(endpoint, is_stub=True, defined_in=origin)
                     local.add(endpoint)
+
+    def save_trace_matrix(self, path: str, title: str | None = None) -> None:
+        """Write an HTML matrix of all trace links to `path`.
+
+        Independent of the diagram render; suitable for audit-style review
+        ("what realizes what, what depends on what, where are the gaps").
+        """
+        from sysatlas._trace_matrix import render_trace_matrix
+        html = render_trace_matrix(self._traces, title=title or f"{self._title} — Trace Matrix")
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(html)
 
     def show(self, viewer: str = "cdn") -> None:
         """Render and open in a browser via a temp file."""
