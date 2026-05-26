@@ -5,29 +5,91 @@ one capability in isolation so we (and anyone reading the codebase) can
 see it work end-to-end. The full e-commerce diagram in `architecture.py`
 doubles as the quickstart.
 
-Generated `.html` is in `.gitignore`; run any demo to produce one
-locally.
+For every demo, this folder ships:
 
-## How to run
+- `<name>.py` — the source (the canonical artefact).
+- `html/<name>.html` — a CDN-rendered interactive copy (~10–25 KB).
+  Open in any browser with internet to pan / zoom the diagram.
+- `img/<name>.png` — a static preview embedded below so GitHub shows
+  the diagram without anyone having to run or download anything.
+
+## How to run / regenerate
 
 ```bash
 python docs/demos/<name>.py
 ```
 
-Each script ends with `.show()` or saves to `/tmp/sysatlas_<name>.html`.
+The committed `html/` and `img/` artefacts are pre-generated; running
+the script locally produces a fresh `.html` you can throw away.
 
-## What's here
+---
 
-| Demo | What it shows |
-|---|---|
-| `architecture.py` | Full e-commerce C4-container diagram (also serves as the quickstart) — `SystemMap` |
-| `tree.py` | Org-chart tree via `TreeMap` (top-down Reingold-Tilford) |
-| `multi_view.py` | Multi-view AD via `System` with cross-view stubs |
-| `qualities.py` | ISO 25010 quality badges on nodes and edges |
-| `trace_matrix.py` | Trace links rendered as both dashed overlay and HTML matrix |
+## architecture — full e-commerce C4-container view
 
-When adding a new diagram capability, drop a self-contained demo here
-and update this table.
+`SystemMap` with 16 components, 5 layers, 19 connections. Stresses
+layout (Sugiyama), routing (A\* with congestion / overlap avoidance),
+off-page connectors, and group swim-lanes.
+
+[source](architecture.py) · [interactive HTML](html/architecture.html)
+
+![architecture](img/architecture.png)
+
+---
+
+## tree — top-down hierarchy via TreeMap
+
+Org chart with 13 nodes. Reingold-Tilford layout: each subtree gets the
+horizontal width its leaves need; parents centre over children.
+
+[source](tree.py) · [interactive HTML](html/tree.html)
+
+![tree](img/tree.png)
+
+---
+
+## multi_view — Architecture Description split into focused views
+
+The same e-commerce system as two separate views (`storefront`,
+`payments`). A `connect()` from one view's component to another's
+becomes an auto-detected stub (dashed/faded box) in the secondary view.
+
+[source](multi_view.py) · [interactive HTML](html/multi_view.html)
+
+![multi_view](img/multi_view.png)
+
+---
+
+## qualities — ISO 25010 quality badges
+
+Components and connections carry typed quality attributes. The renderer
+shows coloured letter badges for any quality with `criticality` of
+`high` or `critical`. Colour key: S=security, P=performance,
+R=reliability, M=maintainability, etc. (see
+[`../ontology/qualities.md`](../ontology/qualities.md)).
+
+[source](qualities.py) · [interactive HTML](html/qualities.html)
+
+![qualities](img/qualities.png)
+
+---
+
+## trace_matrix — trace links as both overlay and table
+
+Trace links are SysML-vocabulary semantic edges across models
+(`realizes`, `depends_on`, `documents`, …). sysatlas renders them in
+two ways: dashed purple **overlay edges** inside each view (they don't
+enter the Sugiyama layout) and a standalone **HTML matrix** for
+audit-style review.
+
+[source](trace_matrix.py) ·
+[diagram with overlays](html/trace_matrix.html) ·
+[matrix table](html/trace_matrix_table.html)
+
+![trace overlays](img/trace_matrix.png)
+
+![trace matrix](img/trace_matrix_table.png)
+
+---
 
 ## Distinction from neighbouring directories
 

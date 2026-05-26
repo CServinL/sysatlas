@@ -11,8 +11,10 @@ build/
 .coverage
 htmlcov/
 
-# generated diagram output (the .py builder script is the source of truth)
+# generated diagram output (the .py builder script is the source of truth).
+# Exception: docs/demos/html/ holds committed CDN-mode renders of each demo.
 *.html
+!docs/demos/html/*.html
 
 # local dev helpers, not part of the library
 _scratch_*.py
