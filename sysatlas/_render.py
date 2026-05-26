@@ -90,6 +90,11 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
     root = ET.SubElement(root_el, "root")
     ET.SubElement(root, "mxCell", id="0")
     ET.SubElement(root, "mxCell", id="1", parent="0")
+    # Separate hidden layer for trace overlays — togglable via the
+    # viewer's layers toolbar button. Always declared so the toggle
+    # always appears (even when there are zero overlays).
+    ET.SubElement(root, "mxCell", id="trace-layer", parent="0",
+                  value="Traces", visible="0")
 
     cell_id = 2
     group_cell_ids: dict[str, str] = {}
@@ -335,7 +340,7 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
             root, "mxCell",
             id=str(cell_id), value=extra.get("label", ""),
             style=style,
-            edge="1", source=src, target=tgt, parent="1",
+            edge="1", source=src, target=tgt, parent="trace-layer",
         )
         ET.SubElement(cell, "mxGeometry", relative="1", **{"as": "geometry"})
         cell_id += 1
