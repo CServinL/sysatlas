@@ -114,6 +114,55 @@ class Reflection:
         reflected = self.to_system_map(title=title)
         return merge_overlay(reflected, overlay)
 
+    def to_system(self, title: str = ""):
+        """Multi-view reflection: one view per top sub-package.
+
+        Returns a `sysatlas.System`. Each top sub-package (the second
+        dotted segment, e.g. `_ontology`, `_reflection`) becomes its
+        own view; top-level modules go in a `root` view. Cross-package
+        imports become `depends_on` trace links between views.
+        """
+        from sysatlas.system import System
+
+        s = System(title=title or f"reflection: {Path(self._graph.root).name}")
+        s.viewpoint("module", model_kinds=["architecture"])
+
+        kept = self._kept_modules()
+        kept_names = {mod.name for mod in kept}
+
+        buckets: dict[str, list] = {}
+        for mod in kept:
+            parts = mod.name.split(".")
+            bucket = parts[1] if len(parts) >= 3 else "root"
+            buckets.setdefault(bucket, []).append(mod)
+
+        local_name: dict[str, tuple[str, str]] = {}
+        for bucket, mods in buckets.items():
+            m = s.architecture_model(bucket)
+            for mod in mods:
+                disp = self._display_name(mod.name)
+                m.add_component(disp, layer=self._layer_for(mod.name), tech=mod.name)
+                local_name[mod.name] = (bucket, disp)
+
+        for mod in kept:
+            src_bucket, src_disp = local_name[mod.name]
+            for imp in mod.imports:
+                if imp not in kept_names:
+                    continue
+                tgt_bucket, tgt_disp = local_name[imp]
+                if src_bucket == tgt_bucket:
+                    s._architecture_models[src_bucket].connect(src_disp, tgt_disp)
+                else:
+                    s.trace(
+                        f"{src_bucket}#{src_disp}",
+                        f"{tgt_bucket}#{tgt_disp}",
+                        kind="depends_on",
+                    )
+
+        for bucket in buckets:
+            s.view(f"{bucket}-view", viewpoint="module", models=[bucket])
+        return s
+
 
 def reflect(path: str | Path, hints: Hints | None = None) -> Reflection:
     """Scan a Python source tree and return a Reflection.
