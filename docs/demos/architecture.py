@@ -1,6 +1,6 @@
 """
-sysatlas quickstart — e-commerce platform architecture.
-Run: python examples/quickstart.py
+Demo: full e-commerce platform architecture.
+Run: python docs/demos/architecture.py
 """
 import sysatlas
 

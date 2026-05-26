@@ -29,8 +29,10 @@ runtime dependencies, opens in any browser.
 pip install sysatlas
 ```
 
-See [`examples/quickstart.py`](examples/quickstart.py) for a working
-diagram in ~50 lines. The design philosophy
+Runnable feature-by-feature showcases live in
+[`docs/demos/`](docs/demos/) — start with
+[`docs/demos/architecture.py`](docs/demos/architecture.py) (the full
+e-commerce diagram). The design philosophy
 ([`docs/design-principles.md`](docs/design-principles.md)) and how
 sysatlas relates to the broader literature — C4, ArchiMate, UML, BPMN,
 ISO 42010 — are in [`docs/state-of-the-art.md`](docs/state-of-the-art.md).
