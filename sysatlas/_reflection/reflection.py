@@ -112,7 +112,11 @@ class Reflection:
 def reflect(path: str | Path, hints: Hints | None = None) -> Reflection:
     """Scan a Python source tree and return a Reflection.
 
-    AST-only. Never imports the target code. Pass `hints=` to override
-    layer/group/exclude/rename without writing a sysatlas.yaml file.
+    AST-only. Never imports the target code. If `hints=` is not passed,
+    looks for sysatlas.json (always) or sysatlas.yaml (if PyYAML installed)
+    next to the scan root and uses it.
     """
+    if hints is None:
+        from sysatlas._reflection.hints import load_hints
+        hints = load_hints(path)
     return Reflection(scan(path), hints=hints)
