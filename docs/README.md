@@ -29,6 +29,9 @@ The full surface exposed from `import sysatlas`:
 | `sysatlas.SystemMap` | Builder — single architecture diagram | [`builders.md`](builders.md) §SystemMap | `sysatlas/system_map.py` |
 | `sysatlas.System` | Builder — multi-view Architecture Description | [`builders.md`](builders.md) §System | `sysatlas/system.py` |
 | `sysatlas.TreeMap` | Builder — tree/org-chart/mindmap diagram | [`builders.md`](builders.md) §TreeMap | `sysatlas/tree_map.py` |
+| `sysatlas.reflect(path)` | Backward flow — AST-scan code → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
+| `sysatlas.Reflection` | Wrapper returned by `reflect()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
+| `sysatlas.llm_guide()` / `.llm_guide_path()` | Bundled LLM usage guide (string / path) | `sysatlas/LLM_GUIDE.md` | `sysatlas/__init__.py` |
 
 Every builder method (`group`, `add_component`, `connect`, `show`,
 `save`, `stakeholder`, `concern`, `viewpoint`, `view`,
