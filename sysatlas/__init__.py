@@ -10,11 +10,20 @@ If you are an LLM helping a user with this library, call
 
 from pathlib import Path
 
+from sysatlas._reflection.reflection import Reflection, reflect
 from sysatlas.system import System
 from sysatlas.system_map import SystemMap
 from sysatlas.tree_map import TreeMap
 
-__all__ = ["SystemMap", "System", "TreeMap", "llm_guide", "llm_guide_path"]
+__all__ = [
+    "SystemMap",
+    "System",
+    "TreeMap",
+    "Reflection",
+    "reflect",
+    "llm_guide",
+    "llm_guide_path",
+]
 __version__ = "0.1.0"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
