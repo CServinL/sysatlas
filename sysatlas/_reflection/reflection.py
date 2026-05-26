@@ -108,6 +108,12 @@ class Reflection:
                 m.connect(src, tgt)
         return m
 
+    def merge_with(self, overlay: SystemMap, title: str = "") -> SystemMap:
+        """Reflect, then apply a user-authored annotation overlay."""
+        from sysatlas._reflection.merge import merge_overlay
+        reflected = self.to_system_map(title=title)
+        return merge_overlay(reflected, overlay)
+
 
 def reflect(path: str | Path, hints: Hints | None = None) -> Reflection:
     """Scan a Python source tree and return a Reflection.
