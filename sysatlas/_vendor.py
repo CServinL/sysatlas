@@ -5,8 +5,7 @@ from pathlib import Path
 
 _VENDOR_DIR = Path.home() / ".sysatlas" / "vendor"
 _VIEWER_URLS = [
-    "https://cdn.jsdelivr.net/npm/@jgraph/drawio/src/main/webapp/js/viewer-static.min.js",
-    "https://unpkg.com/@jgraph/drawio/src/main/webapp/js/viewer-static.min.js",
+    "https://viewer.diagrams.net/js/viewer-static.min.js",
     "https://app.diagrams.net/js/viewer-static.min.js",
 ]
 VIEWER_CDN = _VIEWER_URLS[0]

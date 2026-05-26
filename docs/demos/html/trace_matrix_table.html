@@ -24,8 +24,8 @@
 <table>
   <thead><tr><th></th><th>payments#Fraud</th><th>payments#Gateway</th><th>payments#Payments</th><th>storefront#Cart</th><th>storefront#Catalog</th></tr></thead>
   <tbody>
-<tr><th>payments#Payments</th><td><span class="tag" style="background:#9333ea" title="risk check">Dp</span></td><td><span class="tag" style="background:#9333ea" title="depends_on">Dp</span></td><td></td><td></td><td></td></tr>
-<tr><th>storefront#Cart</th><td></td><td><span class="tag" style="background:#f97316" title="documents">Dc</span></td><td><span class="tag" style="background:#9333ea" title="depends_on">Dp</span></td><td></td><td></td></tr>
+<tr><th>payments#Payments</th><td><span class="tag" style="background:#9333ea" title="risk check before authorize">Dp</span></td><td><span class="tag" style="background:#9333ea" title="depends_on">Dp</span></td><td></td><td></td><td></td></tr>
+<tr><th>storefront#Cart</th><td></td><td><span class="tag" style="background:#f97316" title="see Cart.checkout()">Dc</span></td><td><span class="tag" style="background:#9333ea" title="depends_on">Dp</span></td><td></td><td></td></tr>
 <tr><th>storefront#Search</th><td></td><td></td><td></td><td></td><td><span class="tag" style="background:#9333ea" title="depends_on">Dp</span></td></tr>
 <tr><th>uml-storefront#CartController</th><td></td><td></td><td></td><td><span class="tag" style="background:#3b82f6" title="realizes">Rz</span></td><td></td></tr>
 <tr><th>uml-storefront#CatalogService</th><td></td><td></td><td></td><td></td><td><span class="tag" style="background:#3b82f6" title="realizes">Rz</span></td></tr>
