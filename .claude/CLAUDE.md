@@ -5,6 +5,14 @@ Python describes the diagram; draw.io viewer renders interactive HTML.
 
 Core flow: `SystemMap → mxGraph XML → draw.io viewer → .html`
 
+## Read this first, every new session
+
+After loading this file, immediately read [`../docs/README.md`](../docs/README.md).
+That file is the canonical index of the whole project: public API,
+ontologies, features-to-source-and-doc map, source tree, docs tree,
+and the roadmap. Anything you need to find in this codebase is one
+hop from there.
+
 ## API surface
 
 `SystemMap` is the only public class. Keep it that way.

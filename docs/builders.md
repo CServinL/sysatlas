@@ -133,3 +133,120 @@ kind=...)`. Ten link kinds available: `realizes`, `implements`,
 `refines`, `satisfies`, `represents`, `documents`, `tested_by`,
 `derives_from`, `depends_on`, `describes`. See
 [`ontology/trace.md`](ontology/trace.md).
+
+---
+
+## Automatic behaviours
+
+These are not user-controlled; the renderer applies them based on
+diagram shape and topology. Mentioned here so the output isn't
+surprising.
+
+### Off-page connectors (long-span edges)
+
+When a connection spans **three or more layers** (e.g. an `edge`
+component talking directly to an `infra` component), sysatlas replaces
+the single long line with a pair of small ellipse glyphs near each
+endpoint. The source-side glyph says `↪ Target` and lives in the
+gutter below the source node; the target-side glyph says `↩ Source`
+above the target node. Keeps the diagram clean by avoiding edges that
+cross the whole canvas. Threshold is `LONG_LAYER_THRESHOLD = 3` in
+`sysatlas/_connectors.py`.
+
+### Variable node height
+
+When a node has **four or more connections on the same side**
+(left/right typically), it grows vertically to fit the ports with
+enough spacing. Default height is 60 px; each extra port adds
+`PORT_PITCH = 28` px (label height + edge spacing). Other nodes in the
+same layer keep their height; the row is sized to the tallest. See
+`compute_node_heights` in `sysatlas/_route.py`.
+
+### Bias toward vertical ports
+
+For a layered diagram, edges between layers prefer top/bottom ports
+even when the horizontal offset to the target is somewhat larger than
+the vertical. The bias is 2× in `_pick_side` (`sysatlas/_route.py`):
+horizontal port only when `|dx| > 2·|dy|`. This keeps the typical
+top-down flow clean.
+
+### Label collision avoidance, source bias
+
+Edge labels are placed by scoring candidate positions along the edge.
+Candidates near edge×edge crossings or overlapping with previously
+placed labels are penalised; positions closer to the **source end** of
+the edge are preferred (symmetric layouts get less label congestion in
+the middle). A label is rejected if its perpendicular offset from the
+edge would exceed `MAX_LABEL_OFFSET = 16` px. See
+`_select_labels` in `sysatlas/_route.py`.
+
+### Directional congestion (no collinear overlaps)
+
+The A\* router tracks cell usage **per direction**. Two edges crossing
+perpendicularly at a single point is cheap; two edges running in the
+same direction over overlapping cell ranges (a collinear overlap) is
+heavily penalised. Result: perpendicular crossings exist, parallel
+overlaps don't.
+
+### Group title rows are partial obstacles
+
+Each group's title bar (top 24 px of the swimlane) blocks **horizontal**
+movement for the router (a line running parallel on top of the text is
+forbidden) but allows **vertical** movement (a line crossing through
+perpendicularly is fine).
+
+### Connector glyphs hard-block routing
+
+Off-page connector glyphs (above) are treated as hard obstacles by the
+router. Direct edges never cross them visually.
+
+---
+
+## Debugging
+
+Pass `debug=True` to `SystemMap.show()` to get a layout report printed
+to stdout. Example output:
+
+```
+── Gutter sizes (rank → px gap): {0: 100, 1: 152, 2: 110, 3: 100}
+── Placement refinement ──────────────
+  layer spread: layers [2, 4] expanded to 728px (65% of 1120px)
+  layer centering shifts: [...]
+  port swaps applied: 1
+  swap [Catalog DB ↔ Cache]  cost ↓
+
+── A* routed 16 direct, 3 via connectors ──
+  swap+reroute swaps accepted: 1
+  nodes grown for ports: {'API Gateway': 80, 'Catalog': 80}
+  layout issues:
+    edge through node : 0
+    edge × edge       : 3
+    collinear overlap : 0
+    short/dangling    : 0
+```
+
+The four counters at the end are the **issue detector** in
+`_report_issues`. The first two and the last are visual problems
+sysatlas tries to drive to zero:
+
+- `edge through node` → segment crosses a non-endpoint node's bbox. Must be zero in a good layout.
+- `edge × edge` → two segments cross each other (orthogonal crossings). Some are unavoidable due to topology; tolerable.
+- `collinear overlap` → two segments share the same y (horizontal) or x (vertical) over an overlapping range. Visually indistinguishable lines; must be zero.
+- `short/dangling` → edge with no waypoints. Must be zero.
+
+`debug=True` also enables the per-iteration placement-refinement
+deltas, useful when tuning layout. Not exposed on `System.save()` (yet)
+because System renders multiple views in one call.
+
+---
+
+## What `tech=` does
+
+The `tech=` parameter on `add_component()` is stored as **metadata
+only** — it does not appear in the rendered diagram. It's there to be
+queried programmatically (`m.diagram.components[name].tech`) or to be
+shown by future renderers that surface component metadata. The
+in-diagram label is whatever you pass to `label=`, defaulting to
+`name`. If you want the tech to be visible, include it in the label,
+e.g. `add_component("Cache", label="Cache<br>(Redis)")`. Same for any
+other `**meta` kwargs.
