@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>sysatlas — read/write loops around the ontology</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"trace-layer\" parent=\"0\" value=\"Traces\" visible=\"0\" /><mxCell id=\"legend-layer\" parent=\"0\" value=\"Legend\" visible=\"0\" /><mxCell id=\"2\" value=\"User\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"270\" y=\"100\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"LLM\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"550\" y=\"100\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"Builders\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"100\" y=\"240\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"Reflection\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"100\" y=\"380\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"Ontology\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"380\" y=\"270\" width=\"160\" height=\"140\" as=\"geometry\" /></mxCell><mxCell id=\"7\" value=\"Layout + Render\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"720\" y=\"240\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"8\" value=\"Source code\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"270\" y=\"520\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"9\" value=\"Diagrams\" style=\"rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor=#f8fafc;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"550\" y=\"520\" width=\"160\" height=\"60\" as=\"geometry\" /></mxCell><mxCell id=\"10\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"2\" target=\"4\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"350\" y=\"175\" /><mxPoint x=\"355\" y=\"175\" /><mxPoint x=\"355\" y=\"235\" /><mxPoint x=\"180\" y=\"235\" /></Array></mxGeometry></mxCell><mxCell id=\"10010\" value=\"writes\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"10\"><mxGeometry x=\"-0.7308\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"11\" value=\"\" style=\"rounded=1;exitX=0.0;exitY=0.5;exitDx=0;exitDy=0;entryX=1.0;entryY=0.3333;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"3\" target=\"4\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"545\" y=\"130\" /><mxPoint x=\"545\" y=\"135\" /><mxPoint x=\"465\" y=\"135\" /><mxPoint x=\"465\" y=\"225\" /><mxPoint x=\"275\" y=\"225\" /><mxPoint x=\"275\" y=\"260\" /></Array></mxGeometry></mxCell><mxCell id=\"10011\" value=\"generates\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"11\"><mxGeometry x=\"-0.8571\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"12\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.6667;exitDx=0;exitDy=0;entryX=0.0;entryY=0.3333;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"4\" target=\"6\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"275\" y=\"280\" /><mxPoint x=\"275\" y=\"285\" /><mxPoint x=\"375\" y=\"285\" /><mxPoint x=\"375\" y=\"316\" /></Array></mxGeometry></mxCell><mxCell id=\"10012\" value=\"instantiates\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"12\"><mxGeometry x=\"-0.4231\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"13\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.6667;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"3\" target=\"8\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"630\" y=\"175\" /><mxPoint x=\"635\" y=\"175\" /><mxPoint x=\"635\" y=\"485\" /><mxPoint x=\"375\" y=\"485\" /><mxPoint x=\"375\" y=\"515\" /><mxPoint x=\"376\" y=\"515\" /></Array></mxGeometry></mxCell><mxCell id=\"10013\" value=\"generates\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"13\"><mxGeometry x=\"-0.6885\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"14\" value=\"\" style=\"rounded=1;exitX=0.3333;exitY=0.0;exitDx=0;exitDy=0;entryX=0.5;entryY=1.0;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"8\" target=\"5\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"323\" y=\"515\" /><mxPoint x=\"325\" y=\"515\" /><mxPoint x=\"325\" y=\"455\" /><mxPoint x=\"180\" y=\"455\" /></Array></mxGeometry></mxCell><mxCell id=\"10014\" value=\"parsed by\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"14\"><mxGeometry x=\"-0.674\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"15\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.6667;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"5\" target=\"6\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"275\" y=\"410\" /><mxPoint x=\"275\" y=\"415\" /><mxPoint x=\"375\" y=\"415\" /><mxPoint x=\"375\" y=\"363\" /></Array></mxGeometry></mxCell><mxCell id=\"10015\" value=\"instantiates\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"15\"><mxGeometry x=\"-0.4915\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"16\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"6\" target=\"7\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"555\" y=\"340\" /><mxPoint x=\"555\" y=\"345\" /><mxPoint x=\"715\" y=\"345\" /><mxPoint x=\"715\" y=\"270\" /></Array></mxGeometry></mxCell><mxCell id=\"10016\" value=\"reads\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"16\"><mxGeometry x=\"-0.5385\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"17\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#6b7280;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"7\" target=\"9\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"800\" y=\"315\" /><mxPoint x=\"805\" y=\"315\" /><mxPoint x=\"805\" y=\"515\" /><mxPoint x=\"630\" y=\"515\" /></Array></mxGeometry></mxCell><mxCell id=\"10017\" value=\"renders\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"17\"><mxGeometry x=\"-0.65\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+var viewerMode = "cdn";
+
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.8) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.8) + 'px';
+}
+
+setSize();
+
+if (typeof GraphViewer === 'undefined' || typeof mxUtils === 'undefined') {
+  
+  var msg = '';
+  if (viewerMode === 'cdn') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Could not fetch <code>viewer-static.min.js</code> from the CDN.<br>' +
+          'Check your internet connection, or regenerate with ' +
+          "<code>viewer='local'</code> or <code>viewer='embed'</code>.";
+  } else if (viewerMode === 'local') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Expected <code>viewer-static.min.js</code> next to this HTML file but did not find it.<br>' +
+          'Re-run save with the same path so the file is copied alongside.';
+  } else {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'The embedded viewer JS appears to be corrupted.';
+  }
+  container.innerHTML =
+    '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;' +
+    'background:#fef2f2;border:1px solid #fecaca;border-radius:6px;' +
+    'max-width:560px;margin:auto;line-height:1.5;">' + msg + '</div>';
+
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() {
+    if (viewer && viewer.graph) viewer.graph.fit();
+  }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    if (viewer && viewer.graph) viewer.graph.fit();
+  });
+}
+</script>
+</body>
+</html>

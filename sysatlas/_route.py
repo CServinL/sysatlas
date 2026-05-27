@@ -253,13 +253,15 @@ def route_edges(
             src, tgt = edge_keys[i]
             _route_one(i, src, tgt)
 
-    # resolve label collisions: greedy selection of candidates
-    _select_labels(routes)
+    # resolve label collisions: greedy selection of candidates.
+    # Forbidden zones for label placement: group title bars + node bboxes.
+    forbidden = list(label_zones) + list(bboxes.values())
+    _select_labels(routes, forbidden_zones=forbidden)
 
     return routes
 
 
-def _select_labels(routes: dict) -> None:
+def _select_labels(routes: dict, forbidden_zones: list[tuple[int, int, int, int]] | None = None) -> None:
     """Greedy candidate selection:
     - Bias toward source end of the edge (cleaner for symmetric layouts).
     - Penalize candidates near edge×edge crossings.
@@ -268,6 +270,7 @@ def _select_labels(routes: dict) -> None:
     """
     LABEL_W, LABEL_H = 48, 14
     CROSSING_RADIUS = 30   # px
+    forbidden_zones = forbidden_zones or []
 
     def _box(pixel):
         return (pixel[0] - LABEL_W // 2, pixel[1] - LABEL_H // 2,
@@ -277,6 +280,10 @@ def _select_labels(routes: dict) -> None:
         ix = max(0, min(a[2], b[2]) - max(a[0], b[0]))
         iy = max(0, min(a[3], b[3]) - max(a[1], b[1]))
         return ix * iy
+
+    def _hits_forbidden(pixel) -> bool:
+        b = _box(pixel)
+        return any(_overlap(b, z) > 0 for z in forbidden_zones)
 
     # find all edge×edge crossing points (perpendicular segment intersections)
     segments = []  # (key, axis_horiz, axis_value, low, high)
@@ -337,6 +344,8 @@ def _select_labels(routes: dict) -> None:
                 continue
             if (total_len - c["source_dist"]) < MIN_LABEL_FROM_PORT:
                 continue
+            if _hits_forbidden(c["pixel"]):
+                continue
             cb = _box(c["pixel"])
             collision = sum(_overlap(cb, pb) for pb, _ in placed)
             near_crossing = _crossing_penalty(c["pixel"])
@@ -348,7 +357,23 @@ def _select_labels(routes: dict) -> None:
             if score < best_score:
                 best_score = score
                 best = c
-        # if no candidate satisfied the padding, relax constraint and try again
+        # if no candidate satisfied the padding, relax port-clearance but keep
+        # forbidden-zone reject (overlapping a node or title bar is never ok).
+        if best_score == 1e18:
+            for c in cands:
+                own_dist = abs(c["dx"]) + abs(c["dy"])
+                if own_dist > MAX_LABEL_OFFSET:
+                    continue
+                if _hits_forbidden(c["pixel"]):
+                    continue
+                cb = _box(c["pixel"])
+                collision = sum(_overlap(cb, pb) for pb, _ in placed)
+                score = collision * 100 + own_dist
+                if score < best_score:
+                    best_score = score
+                    best = c
+        # last-resort: ignore forbidden zones too, just pick the lowest-offset
+        # candidate so the label is at least attached to its edge.
         if best_score == 1e18:
             for c in cands:
                 own_dist = abs(c["dx"]) + abs(c["dy"])

@@ -70,10 +70,32 @@ class ArchitectureDiagram(BaseModel):
 - Every `Component.layer` must reference an existing `Layer`.
 - Every `Connection.source` and `Connection.target` must reference an existing `Component`.
 
+## Layout strategy
+
+`ArchitectureDiagram.strategy` selects the placement engine:
+
+- **`"layered"`** (default) — Sugiyama: layers stacked top-to-bottom by
+  `Layer.order`, edges routed by A\* between layer bands. See
+  `sysatlas/_layout.py`. This is the right choice for code-structure
+  diagrams (sources flow toward sinks through intermediate tiers).
+- **`"hub"`** — read/write loops around a central component. Five reserved
+  layer names drive placement: `"interfaces"` (top), `"write"` (left
+  column), `"hub"` (centre), `"read"` (right column), `"external"`
+  (bottom). See `sysatlas/_hub_layout.py`. This is the right choice when
+  the system's story *is* the loop around a shared model — humans/agents
+  and external systems on opposite sides of an integrating hub.
+
 ## Computed concepts (not user-declared)
 
 These emerge from the layout pipeline, not from the input:
 
+- **Sub-band** — when a `Layer` hosts >1 distinct `Group`, the renderer
+  splits the layer's vertical extent into one horizontal sub-band per
+  group. Stable order: groups are sub-banded in the order their members
+  first appear in the layer. The layer banner spans all sub-bands; each
+  sub-band carries its own group banner inside. Components without a group
+  share a single implicit sub-band. Sub-bands have no separate type —
+  they are derived from `(Component.layer, Component.group)`.
 - **Port** — `{side: top|bottom|left|right, fraction: 0..1}` assigned per
   connection-end per component. Sides are picked from relative geometry;
   fractions distribute multiple edges along the side. See `_route._assign_ports`.

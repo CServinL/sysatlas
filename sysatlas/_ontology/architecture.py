@@ -16,7 +16,15 @@ EdgeStyle = Literal["solid", "dashed", "dotted"]
 
 
 class Layer(BaseModel):
-    """A vertical tier (e.g. 'edge', 'services', 'data')."""
+    """A vertical tier (e.g. 'edge', 'services', 'data').
+
+    A layer may host any number of groups. When >1 group share a layer, each
+    group renders as a horizontal sub-band stacked inside that layer's
+    vertical extent. Sub-bands are a visual artifact only — they have no
+    separate type, they are derived at render time from the (layer, group)
+    pair on each Component. The layer banner spans all sub-bands; each
+    sub-band carries its own group banner inside.
+    """
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -87,7 +95,7 @@ class ArchitectureDiagram(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = ""
-    strategy: Literal["layered"] = "layered"
+    strategy: Literal["layered", "hub"] = "layered"
     layers: list[Layer] = Field(default_factory=list)
     groups: dict[str, Group] = Field(default_factory=dict)
     components: dict[str, Component] = Field(default_factory=dict)

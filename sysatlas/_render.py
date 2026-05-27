@@ -70,17 +70,25 @@ def _palette(groups: dict[str, dict]) -> dict[str, str]:
 
 def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict],
               layer_order: list[str], debug: bool = False,
-              extra_edges: list[dict] | None = None) -> str:
+              extra_edges: list[dict] | None = None,
+              strategy: str = "layered") -> str:
     """Build mxGraph XML.
 
     `extra_edges` are appended AFTER the main layout/routing is done.
     They get rendered as straight dashed edges between known node positions
     without influencing the Sugiyama layer assignment. Each entry has
     `source`, `target`, optional `label`, optional `style`, optional `color`.
+
+    `strategy` picks the placement engine: "layered" (Sugiyama) or "hub"
+    (read/write-loops shape with a central component).
     """
     extra_edges = extra_edges or []
     colors = _palette(groups)
-    pos, waypoints, node_heights = compute_layout(nodes, edges, layer_order, debug=debug)
+    if strategy == "hub":
+        from sysatlas._hub_layout import compute_hub_layout
+        pos, waypoints, node_heights = compute_hub_layout(nodes, edges, layer_order, debug=debug)
+    else:
+        pos, waypoints, node_heights = compute_layout(nodes, edges, layer_order, debug=debug)
 
     root_el = ET.Element("mxGraphModel", dx="1422", dy="762", grid="1",
                          gridSize="10", guides="1", tooltips="1",
@@ -90,6 +98,15 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
     root = ET.SubElement(root_el, "root")
     ET.SubElement(root, "mxCell", id="0")
     ET.SubElement(root, "mxCell", id="1", parent="0")
+    # Separate hidden layer for trace overlays — togglable via the
+    # viewer's layers toolbar button. Always declared so the toggle
+    # always appears (even when there are zero overlays).
+    ET.SubElement(root, "mxCell", id="trace-layer", parent="0",
+                  value="Traces", visible="0")
+    # Separate hidden layer for the quality-badge legend — togglable from
+    # the viewer's layers toolbar. Always declared so the toggle appears.
+    ET.SubElement(root, "mxCell", id="legend-layer", parent="0",
+                  value="Legend", visible="0")
 
     cell_id = 2
     group_cell_ids: dict[str, str] = {}
@@ -335,10 +352,63 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
             root, "mxCell",
             id=str(cell_id), value=extra.get("label", ""),
             style=style,
-            edge="1", source=src, target=tgt, parent="1",
+            edge="1", source=src, target=tgt, parent="trace-layer",
         )
         ET.SubElement(cell, "mxGeometry", relative="1", **{"as": "geometry"})
         cell_id += 1
+
+    # Legend: one row per distinct quality category that actually renders a
+    # badge (criticality >= high) in this diagram. Lives on the hidden
+    # "legend-layer"; the viewer's layers toolbar exposes the toggle.
+    used: list[str] = []
+    for data in nodes.values():
+        for q in _badge_qualities(data.get("qualities", [])):
+            cat = q.get("category")
+            if cat and cat in _QUALITY_LETTER and cat not in used:
+                used.append(cat)
+    for edge in edges:
+        for q in _badge_qualities(edge.get("qualities", [])):
+            cat = q.get("category")
+            if cat and cat in _QUALITY_LETTER and cat not in used:
+                used.append(cat)
+    if used:
+        all_xs = [p[0] for p in pos.values()] or [80]
+        all_ys = [p[1] for p in pos.values()] or [80]
+        lx = max(all_xs) + _NODE_W + 60
+        ly = min(all_ys)
+        row_h = 22
+        box = ET.SubElement(root, "mxCell",
+                            id=str(cell_id), value="Quality badges",
+                            style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;"
+                                  "strokeColor=#cbd5e1;fontSize=11;fontStyle=1;"
+                                  "verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;",
+                            vertex="1", parent="legend-layer")
+        ET.SubElement(box, "mxGeometry",
+                      x=str(lx), y=str(ly),
+                      width="220", height=str(28 + len(used) * row_h),
+                      **{"as": "geometry"})
+        cell_id += 1
+        for k, cat in enumerate(used):
+            badge_y = ly + 30 + k * row_h
+            b = ET.SubElement(root, "mxCell",
+                              id=str(cell_id), value=_QUALITY_LETTER[cat],
+                              style=_BADGE_STYLE.format(fill=_QUALITY_COLOR[cat]),
+                              vertex="1", parent="legend-layer")
+            ET.SubElement(b, "mxGeometry",
+                          x=str(lx + 10), y=str(badge_y),
+                          width=str(_BADGE_SIZE), height=str(_BADGE_SIZE),
+                          **{"as": "geometry"})
+            cell_id += 1
+            label = ET.SubElement(root, "mxCell",
+                                  id=str(cell_id), value=cat.replace("_", " "),
+                                  style="text;html=1;align=left;verticalAlign=middle;"
+                                        "fontSize=10;fontColor=#334155;",
+                                  vertex="1", parent="legend-layer")
+            ET.SubElement(label, "mxGeometry",
+                          x=str(lx + 32), y=str(badge_y - 2),
+                          width="180", height=str(_BADGE_SIZE + 4),
+                          **{"as": "geometry"})
+            cell_id += 1
 
     return ET.tostring(root_el, encoding="unicode", xml_declaration=False)
 
@@ -375,7 +445,7 @@ def _viewer_tag(viewer: str) -> str:
 
 
 def render(nodes, edges, groups, layer_order, strategy, title, debug: bool = False, viewer: str = "cdn") -> str:
-    xml = build_xml(nodes, edges, groups, layer_order, debug=debug)
+    xml = build_xml(nodes, edges, groups, layer_order, debug=debug, strategy=strategy)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)
 

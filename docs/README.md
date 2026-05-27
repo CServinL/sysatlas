@@ -29,11 +29,27 @@ The full surface exposed from `import sysatlas`:
 | `sysatlas.SystemMap` | Builder — single architecture diagram | [`builders.md`](builders.md) §SystemMap | `sysatlas/system_map.py` |
 | `sysatlas.System` | Builder — multi-view Architecture Description | [`builders.md`](builders.md) §System | `sysatlas/system.py` |
 | `sysatlas.TreeMap` | Builder — tree/org-chart/mindmap diagram | [`builders.md`](builders.md) §TreeMap | `sysatlas/tree_map.py` |
+| `sysatlas.reflect(path)` | Backward flow — AST-scan code → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
+| `sysatlas.Reflection` | Wrapper returned by `reflect()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
+| `sysatlas.llm_guide()` / `.llm_guide_path()` | Bundled LLM usage guide (string / path) | `sysatlas/LLM_GUIDE.md` | `sysatlas/__init__.py` |
 
 Every builder method (`group`, `add_component`, `connect`, `show`,
 `save`, `stakeholder`, `concern`, `viewpoint`, `view`,
 `architecture_model`, `trace`, `save_trace_matrix`, `add`,
 `save_collection`) is documented in [`builders.md`](builders.md).
+
+`SystemMap(strategy=...)` picks the placement engine:
+- `"layered"` (default) — Sugiyama top-down stack with sub-bands per
+  group within a layer (see `ontology/architecture.md`).
+- `"hub"` — read/write-loops shape with a central component. Five
+  reserved layer names: `interfaces` (top), `write` (left), `hub`
+  (centre), `read` (right), `external` (bottom). Demo: [`demos/hub.py`](demos/hub.py).
+
+Two togglable mxGraph layers ship in every architecture diagram, both
+hidden by default; the viewer's layers toolbar exposes them:
+- **Traces** — cross-view trace overlays (`System.trace(...)`).
+- **Legend** — auto-generated key for the ISO 25010 quality-badge
+  letters actually used in this diagram.
 
 The underlying validated Pydantic instance is reachable via
 `m.diagram` (SystemMap, TreeMap) or `s.description` (System).
@@ -121,7 +137,16 @@ sysatlas/
 ├── _place.py                   — barycenter refinement, swap-and-reroute, narrow-layer spread
 ├── _route.py                   — A* routing, port assignment, label placement
 ├── _connectors.py              — long-span edge → off-page connector classification
-├── _render.py                  — mxGraph XML emission, HTML shell, badges, stubs
+├── _hub_layout.py              — hub-and-spoke placement (strategy="hub")
+├── _render.py                  — mxGraph XML emission, HTML shell, badges, stubs, hidden trace + legend layers
+├── _reflection/
+│   ├── __init__.py
+│   ├── parser.py               — AST walk: modules + imports
+│   ├── resolve.py              — import string → in-tree module
+│   ├── layers.py               — heuristic layer/group inference
+│   ├── hints.py                — sysatlas.json / sysatlas.yaml loader
+│   ├── merge.py                — round-trip merge with hand-authored overlay
+│   └── reflection.py           — Reflection class; to_system_map / to_system / merge_with
 ├── _tree_layout.py             — Reingold-Tilford for TreeMap
 ├── _tree_render.py             — tree-specific draw.io emission
 ├── _trace_matrix.py            — HTML matrix view-kind for trace links
@@ -168,11 +193,19 @@ docs/
 │   ├── multi_view.py / .html / .png
 │   ├── qualities.py / .html / .png
 │   ├── trace_matrix.py / .html / .png  (+ trace_matrix_table)
+│   ├── hub.py / .html / .png   — hub-and-spoke strategy
 │   ├── html/                   — committed CDN renders (~10–25 KB each)
 │   └── img/                    — committed PNG previews
-└── reflection/                 — sysatlas diagrams of sysatlas (dog-fooding)
-    └── README.md               — skeleton; planned: pipeline.py, ontology-tree.py, module-map.py, quality-map.py
+├── reflection/                 — sysatlas diagrams of sysatlas (dog-fooding)
+│   ├── README.md
+│   ├── loops.py / .html / .png — conceptual: read/write loops around the ontology (hub strategy)
+│   └── module-map.py / .html / .png — literal: AST-derived module import graph
+└── issues/
+    └── reflection.md           — backward-flow feature scope, milestones, extras
 ```
+
+`scripts/regen_demos.py` rebuilds every `docs/demos/html/*.html` from
+its `.py` so committed renders stay in sync with the current renderer.
 
 ---
 

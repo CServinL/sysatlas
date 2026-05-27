@@ -27,3 +27,9 @@ dependencies = ["networkx>=3.0", "pydantic>=2.0"]
 Homepage = "https://github.com/CServinL/sysatlas"
 Repository = "https://github.com/CServinL/sysatlas"
 Issues = "https://github.com/CServinL/sysatlas/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sysatlas"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"sysatlas/LLM_GUIDE.md" = "sysatlas/LLM_GUIDE.md"

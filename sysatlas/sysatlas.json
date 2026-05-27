@@ -1,0 +1,51 @@
+{
+  "exclude": ["LLM_GUIDE.md", "__init__.py", "*/__init__.py", "sysatlas.json"],
+  "layer": {
+    "sysatlas._render": "render",
+    "sysatlas._tree_render": "render",
+    "sysatlas._trace_matrix": "render",
+
+    "sysatlas._layout": "layout",
+    "sysatlas._place": "layout",
+    "sysatlas._route": "layout",
+    "sysatlas._connectors": "layout",
+    "sysatlas._tree_layout": "layout",
+
+    "sysatlas._ontology.architecture": "ontology",
+    "sysatlas._ontology.qualities": "ontology",
+    "sysatlas._ontology.iso42010": "ontology",
+    "sysatlas._ontology.trace": "ontology",
+    "sysatlas._ontology.tree": "ontology",
+    "sysatlas._ontology.bpmn": "ontology",
+    "sysatlas._ontology.er": "ontology",
+    "sysatlas._ontology.sequence": "ontology",
+    "sysatlas._ontology.state_machine": "ontology",
+    "sysatlas._ontology.uml_class": "ontology",
+
+    "sysatlas.system_map": "builders",
+    "sysatlas.system": "builders",
+    "sysatlas.tree_map": "builders",
+
+    "sysatlas._reflection.parser": "reflection",
+    "sysatlas._reflection.resolve": "reflection",
+    "sysatlas._reflection.layers": "reflection",
+    "sysatlas._reflection.reflection": "reflection",
+    "sysatlas._reflection.hints": "reflection",
+    "sysatlas._reflection.merge": "reflection",
+
+    "sysatlas._vendor": "infra"
+  },
+  "group": {
+    "sysatlas._ontology.architecture": "diagram-types",
+    "sysatlas._ontology.bpmn": "diagram-types",
+    "sysatlas._ontology.er": "diagram-types",
+    "sysatlas._ontology.sequence": "diagram-types",
+    "sysatlas._ontology.state_machine": "diagram-types",
+    "sysatlas._ontology.uml_class": "diagram-types",
+    "sysatlas._ontology.tree": "diagram-types",
+
+    "sysatlas._ontology.iso42010": "cross-cutting",
+    "sysatlas._ontology.trace": "cross-cutting",
+    "sysatlas._ontology.qualities": "cross-cutting"
+  }
+}

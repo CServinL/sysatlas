@@ -101,7 +101,7 @@ class SystemMap:
 
     def _to_xml(self, extra_edges: list[dict] | None = None) -> str:
         return build_xml(self._nodes, self._edges, self._groups, self._layer_order,
-                         extra_edges=extra_edges)
+                         extra_edges=extra_edges, strategy=self._strategy)
 
     @staticmethod
     def save_collection(diagrams: dict[str, "SystemMap"], path: str, title: str = "", viewer: str = "cdn") -> None:
