@@ -84,7 +84,12 @@ class Reflection:
                 m.group(group)
                 groups_added.add(group)
 
-        for mod in kept:
+        _LAYER_TOP_DOWN = ["render", "layout", "edge", "services", "ontology",
+                           "builders", "data", "reflection", "infra", "external"]
+        def _layer_key(mod):
+            l = self._layer_for(mod.name)
+            return _LAYER_TOP_DOWN.index(l) if l in _LAYER_TOP_DOWN else len(_LAYER_TOP_DOWN)
+        for mod in sorted(kept, key=_layer_key):
             m.add_component(
                 self._display_name(mod.name),
                 group=self._group_for(mod.name),

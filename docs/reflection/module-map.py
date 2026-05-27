@@ -20,6 +20,6 @@ SOURCE = REPO / "sysatlas"
 OUT = Path(__file__).with_suffix(".html")
 
 r = sysatlas.reflect(SOURCE)
-s = r.to_system(title="sysatlas — reflected from source")
+s = r.to_system_map(title="sysatlas — reflected from source")
 s.save(str(OUT))
 print(f"[sysatlas] wrote {OUT}")

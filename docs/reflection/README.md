@@ -12,7 +12,21 @@ can produce a usable diagram of its own source, the API works.
 
 | File | What it diagrams | How |
 |---|---|---|
-| [`module-map.py`](module-map.py) → [`module-map.html`](module-map.html) · [PNG](img/module-map.png) | sysatlas's internal module dependency graph. | `sysatlas.reflect()` (backward flow). Hints loaded from `sysatlas/sysatlas.json`. |
+| [`loops.py`](loops.py) → [`loops.html`](loops.html) · [PNG](img/loops.png) | sysatlas as read/write loops around its ontology. The *conceptual* view: what sysatlas is. | Hand-authored (forward flow). |
+| [`module-map.py`](module-map.py) → [`module-map.html`](module-map.html) · [PNG](img/module-map.png) | sysatlas's internal module dependency graph. The *literal* view: what its files import. | `sysatlas.reflect()` (backward flow). Hints loaded from `sysatlas/sysatlas.json`. |
+
+### The conceptual view
+
+![loops](img/loops.png)
+
+Three parties feed the ontology — User, LLM, and Source code. Two
+symmetric write paths reach it: **forward** through the builders
+(user/LLM writing code), **backward** through reflection (parsing
+existing code). The ontology hub is drained by layout + render into
+diagrams. That symmetry — forward / backward writing into the same
+shared grammar — *is* the read/write loop.
+
+### The literal view
 
 ![module map](img/module-map.png)
 
@@ -30,10 +44,13 @@ can produce a usable diagram of its own source, the API works.
 ### How to regenerate
 
 ```bash
-python docs/reflection/module-map.py
+python docs/reflection/loops.py        # conceptual view (hand-authored)
+python docs/reflection/module-map.py   # literal module dependency graph
 ```
 
-Re-run after any module add / remove / rename. The committed
+Re-run `module-map.py` after any module add / remove / rename. The
+`loops.py` view is stable and only needs regenerating when the
+conceptual story changes (new actors, new flow stages). The committed
 `module-map.html` is whitelisted in `.gitignore` so updates show up in
 diffs alongside the source change.
 
