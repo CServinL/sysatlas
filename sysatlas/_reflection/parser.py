@@ -68,7 +68,12 @@ def _module_name(path: Path, scan_root: Path) -> str:
     parts = list(rel.parts)
     if parts and parts[-1] == "__init__":
         parts = parts[:-1]
-    return ".".join([scan_root.name, *parts]) if parts else scan_root.name
+    # If scan_root is itself a package (has __init__.py), prefix with its name
+    # so imports of "pkg.x" resolve. Otherwise scan_root is a container like
+    # "src/" — use the package directory under it as the top-level instead.
+    if (scan_root / "__init__.py").exists():
+        return ".".join([scan_root.name, *parts]) if parts else scan_root.name
+    return ".".join(parts) if parts else ""
 
 
 def _extract_imports(path: Path, modname: str) -> list[str]:
@@ -105,4 +110,9 @@ def _absolute_from(node: ast.ImportFrom, modname: str) -> str | None:
     base = parts[: len(parts) - node.level]
     if node.module:
         base = base + node.module.split(".")
-    return ".".join(base) if base else None
+    # Empty base means the import resolves to the package root (e.g.
+    # `from . import x` inside pkg/__init__.py where modname == "pkg").
+    # Treat that as the current package itself so the edge is captured.
+    if not base:
+        return parts[0] if parts else ""
+    return ".".join(base)

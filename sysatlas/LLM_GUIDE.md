@@ -35,9 +35,10 @@ m = r.to_system_map(title="…")
 m.save("docs/reflection/module-map.html")
 ```
 
-If the project has a `sysatlas.yaml` hints file at the source root,
-`reflect()` will pick it up automatically — do not edit hints unless
-the user asks.
+If the project has a hints file at the source root, `reflect()` will
+pick it up automatically — do not edit hints unless the user asks.
+Lookup order: `sysatlas.json` (always supported), then
+`sysatlas.yaml` / `sysatlas.yml` (only if PyYAML is installed).
 
 If the project has an "annotation overlay" `.py` file (typical
 location: `docs/reflection/_overlay.py`), call `r.merge_with(overlay)`

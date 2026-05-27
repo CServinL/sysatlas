@@ -36,10 +36,17 @@ def _spread(xs_centre: int, names: list[str], gap: int = _GAP_X) -> list[int]:
     return [start + i * (NODE_W + gap) for i in range(len(names))]
 
 
+_RESERVED = ("interfaces", "write", "hub", "read", "external")
+
+
 def _place(nodes: dict[str, dict]) -> tuple[dict[str, tuple[int, int]], dict[str, int]]:
     by_layer: dict[str, list[str]] = defaultdict(list)
     for n, data in nodes.items():
-        by_layer[data.get("layer") or ""].append(n)
+        layer = data.get("layer")
+        # Unknown layers fall into "external" so every node gets a position.
+        if layer not in _RESERVED:
+            layer = "external"
+        by_layer[layer].append(n)
 
     interfaces = by_layer.get("interfaces", [])
     writes     = by_layer.get("write", [])

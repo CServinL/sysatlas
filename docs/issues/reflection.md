@@ -30,9 +30,10 @@ is a normal `SystemMap` — no second renderer, no parallel schema.
    heuristic table (`api|web|http` → `edge`, `services|domain` →
    `services`, `db|storage|persistence` → `data`, `infra|platform` →
    `infra`). Anything unmatched → `services`. Overridable via hints.
-5. **Hints file = optional YAML next to the target** (`sysatlas.yaml`):
-   `exclude`, `layer`, `group`, `rename`. Absence means pure-heuristic
-   mode.
+5. **Hints file = optional, next to the target.** `sysatlas.json` is the
+   default and always supported; `sysatlas.yaml` / `sysatlas.yml` are
+   accepted when PyYAML is installed. Fields: `exclude`, `layer`,
+   `group`, `rename`. Absence means pure-heuristic mode.
 6. **Round-trip merge** = the blueprint's components/connections that
    match reflected ones get their `qualities`, `label`, `tech` merged
    in; blueprint components that don't match get added as user-asserted

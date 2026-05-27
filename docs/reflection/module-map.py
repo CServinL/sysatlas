@@ -4,10 +4,10 @@ Backward flow end-to-end. AST-only — no execution of the scanned tree.
 Demonstrates the loop a coding assistant should run after any structural
 change: reflect the source, save the diagram, commit it.
 
-Uses `to_system(...)` (multi-view) rather than `to_system_map()` —
-sysatlas's own bounded-complexity principle says ~25 modules don't fit
-on a single canvas. One view per top sub-package; cross-package imports
-become depends_on trace links between views.
+Uses `to_system_map()` for a single-view module map. sysatlas itself
+exceeds the bounded-complexity budget (~15 components), so running this
+will emit a UserWarning suggesting `to_system()` for a multi-view split
+— that warning is part of what this demo shows.
 
 Run: python docs/reflection/module-map.py
 """

@@ -7,7 +7,7 @@ stubs so drift between intent and reality is obvious.
 """
 from __future__ import annotations
 
-from sysatlas._ontology.architecture import Component, Connection
+from sysatlas._ontology.architecture import Component, Layer
 from sysatlas.system_map import SystemMap
 
 
@@ -57,6 +57,12 @@ def merge_overlay(reflected: SystemMap, overlay: SystemMap) -> SystemMap:
                     "layer": ov.layer or "external",
                 }
             )
+
+    declared_layers = {layer.name for layer in out._diagram.layers}
+    for comp in out._diagram.components.values():
+        if comp.layer and comp.layer not in declared_layers:
+            out._diagram.layers.append(Layer(name=comp.layer))
+            declared_layers.add(comp.layer)
 
     existing_edges = {(c.source, c.target) for c in reflected.diagram.connections}
     for c in reflected.diagram.connections:

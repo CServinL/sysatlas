@@ -19,7 +19,7 @@ from sysatlas.system_map import SystemMap
 
 
 class Hints(BaseModel):
-    """Optional sysatlas.yaml content. All fields optional."""
+    """Optional hints file content (sysatlas.json, or sysatlas.yaml if PyYAML installed). All fields optional."""
     model_config = ConfigDict(extra="forbid")
 
     exclude: list[str] = Field(default_factory=list)
@@ -155,8 +155,10 @@ class Reflection:
             buckets.setdefault(bucket, []).append(mod)
 
         local_name: dict[str, tuple[str, str]] = {}
+        models: dict[str, "SystemMap"] = {}
         for bucket, mods in buckets.items():
             m = s.architecture_model(bucket)
+            models[bucket] = m
             for mod in mods:
                 disp = self._display_name(mod.name)
                 m.add_component(disp, layer=self._layer_for(mod.name), tech=mod.name)
@@ -169,7 +171,7 @@ class Reflection:
                     continue
                 tgt_bucket, tgt_disp = local_name[imp]
                 if src_bucket == tgt_bucket:
-                    s._architecture_models[src_bucket].connect(src_disp, tgt_disp)
+                    models[src_bucket].connect(src_disp, tgt_disp)
                 else:
                     s.trace(
                         f"{src_bucket}#{src_disp}",
