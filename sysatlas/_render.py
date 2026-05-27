@@ -103,6 +103,10 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
     # always appears (even when there are zero overlays).
     ET.SubElement(root, "mxCell", id="trace-layer", parent="0",
                   value="Traces", visible="0")
+    # Separate hidden layer for the quality-badge legend — togglable from
+    # the viewer's layers toolbar. Always declared so the toggle appears.
+    ET.SubElement(root, "mxCell", id="legend-layer", parent="0",
+                  value="Legend", visible="0")
 
     cell_id = 2
     group_cell_ids: dict[str, str] = {}
@@ -352,6 +356,59 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
         )
         ET.SubElement(cell, "mxGeometry", relative="1", **{"as": "geometry"})
         cell_id += 1
+
+    # Legend: one row per distinct quality category that actually renders a
+    # badge (criticality >= high) in this diagram. Lives on the hidden
+    # "legend-layer"; the viewer's layers toolbar exposes the toggle.
+    used: list[str] = []
+    for data in nodes.values():
+        for q in _badge_qualities(data.get("qualities", [])):
+            cat = q.get("category")
+            if cat and cat in _QUALITY_LETTER and cat not in used:
+                used.append(cat)
+    for edge in edges:
+        for q in _badge_qualities(edge.get("qualities", [])):
+            cat = q.get("category")
+            if cat and cat in _QUALITY_LETTER and cat not in used:
+                used.append(cat)
+    if used:
+        all_xs = [p[0] for p in pos.values()] or [80]
+        all_ys = [p[1] for p in pos.values()] or [80]
+        lx = max(all_xs) + _NODE_W + 60
+        ly = min(all_ys)
+        row_h = 22
+        box = ET.SubElement(root, "mxCell",
+                            id=str(cell_id), value="Quality badges",
+                            style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;"
+                                  "strokeColor=#cbd5e1;fontSize=11;fontStyle=1;"
+                                  "verticalAlign=top;align=left;spacingLeft=8;spacingTop=6;",
+                            vertex="1", parent="legend-layer")
+        ET.SubElement(box, "mxGeometry",
+                      x=str(lx), y=str(ly),
+                      width="220", height=str(28 + len(used) * row_h),
+                      **{"as": "geometry"})
+        cell_id += 1
+        for k, cat in enumerate(used):
+            badge_y = ly + 30 + k * row_h
+            b = ET.SubElement(root, "mxCell",
+                              id=str(cell_id), value=_QUALITY_LETTER[cat],
+                              style=_BADGE_STYLE.format(fill=_QUALITY_COLOR[cat]),
+                              vertex="1", parent="legend-layer")
+            ET.SubElement(b, "mxGeometry",
+                          x=str(lx + 10), y=str(badge_y),
+                          width=str(_BADGE_SIZE), height=str(_BADGE_SIZE),
+                          **{"as": "geometry"})
+            cell_id += 1
+            label = ET.SubElement(root, "mxCell",
+                                  id=str(cell_id), value=cat.replace("_", " "),
+                                  style="text;html=1;align=left;verticalAlign=middle;"
+                                        "fontSize=10;fontColor=#334155;",
+                                  vertex="1", parent="legend-layer")
+            ET.SubElement(label, "mxGeometry",
+                          x=str(lx + 32), y=str(badge_y - 2),
+                          width="180", height=str(_BADGE_SIZE + 4),
+                          **{"as": "geometry"})
+            cell_id += 1
 
     return ET.tostring(root_el, encoding="unicode", xml_declaration=False)
 
