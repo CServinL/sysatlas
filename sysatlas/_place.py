@@ -82,8 +82,8 @@ def refine_placement(
             if not real:
                 continue
 
-            # current y is fixed per layer
-            y = pos[real[0]][1]
+            # per-node y is preserved (a layer may have sub-bands when it
+            # hosts >1 group); only x moves in this pass.
 
             # target x = blend(weighted barycenter of neighbors, group barycenter)
             # weighted: each neighbor's x is multiplied by edge-count to that neighbor,
@@ -121,8 +121,8 @@ def refine_placement(
 
             for (n, _), nx in zip(damped, xs):
                 nx_i = int(round(nx))
-                ox, _ = pos[n]
-                new_pos[n] = (nx_i, y)
+                ox, oy = pos[n]
+                new_pos[n] = (nx_i, oy)
                 max_delta = max(max_delta, abs(nx_i - ox))
 
         pos = new_pos
@@ -320,13 +320,12 @@ def _refine_y(
     for layer in layers:
         if not layer:
             continue
-        base_y = pos[layer[0]][1]
         for n in layer:
             nbrs = [m for m in adj[n] if m in pos]
             if not nbrs:
                 continue
+            base_y = pos[n][1]  # per-node, to preserve sub-bands
             avg_y = sum(pos[m][1] for m in nbrs) / len(nbrs)
-            # bias toward neighbor avg, but clamp to ±MAX_Y_OFFSET around base
             delta = avg_y - base_y
             delta = max(-MAX_Y_OFFSET, min(MAX_Y_OFFSET, delta))
             new_y = int(round(base_y + 0.5 * delta))

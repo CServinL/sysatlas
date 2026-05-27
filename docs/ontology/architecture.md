@@ -74,6 +74,13 @@ class ArchitectureDiagram(BaseModel):
 
 These emerge from the layout pipeline, not from the input:
 
+- **Sub-band** — when a `Layer` hosts >1 distinct `Group`, the renderer
+  splits the layer's vertical extent into one horizontal sub-band per
+  group. Stable order: groups are sub-banded in the order their members
+  first appear in the layer. The layer banner spans all sub-bands; each
+  sub-band carries its own group banner inside. Components without a group
+  share a single implicit sub-band. Sub-bands have no separate type —
+  they are derived from `(Component.layer, Component.group)`.
 - **Port** — `{side: top|bottom|left|right, fraction: 0..1}` assigned per
   connection-end per component. Sides are picked from relative geometry;
   fractions distribute multiple edges along the side. See `_route._assign_ports`.

@@ -10,6 +10,7 @@ NODE_W = 160
 NODE_H = 60
 X_GAP  = 80
 Y_GAP  = 100   # minimum gap; expands dynamically per gutter
+SUB_GAP = 30   # vertical gap between sub-bands within a layer
 
 _MARGIN_X    = 80
 _MARGIN_Y    = 80
@@ -42,7 +43,7 @@ def compute_layout(
     # space for connector glyphs landing in each gutter.
     y_gaps = _gutter_sizes(direct_edges, rank, len(layers), connector_edges)
 
-    pos_all, _ = _assign_coords(layers, real_nodes, y_gaps)
+    pos_all, _ = _assign_coords(layers, real_nodes, y_gaps, nodes_meta=nodes)
     pos = {n: pos_all[n] for n in nodes if n in pos_all}
 
     real_layers = [[n for n in layer if n in real_nodes] for layer in layers]
@@ -564,32 +565,62 @@ def _assign_coords(
     layers: list[list[str]],
     real_nodes: set[str],
     y_gaps: dict[int, int] | None = None,
+    nodes_meta: dict[str, dict] | None = None,
 ) -> tuple[dict[str, tuple[int, int]], dict[int, int]]:
-    """Returns (pos, layer_tops) where layer_tops[r] = y coordinate of rank r."""
+    """Returns (pos, layer_tops) where layer_tops[r] = y coordinate of rank r.
+
+    When a layer hosts >1 distinct group, its real nodes are sub-banded:
+    each group gets its own y inside the layer (stable order by first
+    appearance). Layer height grows accordingly.
+    """
     y_gaps = y_gaps or {}
+    nodes_meta = nodes_meta or {}
     pos: dict[str, tuple[int, int]] = {}
     layer_tops: dict[int, int] = {}
 
+    def _band_index(layer: list[str]) -> tuple[dict[str | None, int], int]:
+        order: list[str | None] = []
+        for n in layer:
+            if n not in real_nodes:
+                continue
+            g = nodes_meta.get(n, {}).get("group")
+            if g not in order:
+                order.append(g)
+        if not order:
+            return ({}, 1)
+        return ({g: i for i, g in enumerate(order)}, len(order))
+
     cumulative_y = _MARGIN_Y
+    prev_layer_h = 0
     for r, layer in enumerate(layers):
         if r > 0:
-            cumulative_y += NODE_H + y_gaps.get(r - 1, Y_GAP)
-        y = cumulative_y
-        layer_tops[r] = y
+            cumulative_y += prev_layer_h + y_gaps.get(r - 1, Y_GAP)
+        layer_top = cumulative_y
+        layer_tops[r] = layer_top
+
+        band_of, n_bands = _band_index(layer)
+        prev_layer_h = NODE_H + (n_bands - 1) * (NODE_H + SUB_GAP)
+        center_y = layer_top + (prev_layer_h - NODE_H) // 2
+
+        def _y_for(name: str) -> int:
+            if name not in real_nodes:
+                return center_y
+            g = nodes_meta.get(name, {}).get("group")
+            return layer_top + band_of.get(g, 0) * (NODE_H + SUB_GAP)
 
         real = [n for n in layer if n in real_nodes]
         if not real:
             for i, n in enumerate(layer):
-                pos[n] = (_MARGIN_X + i * (NODE_W + X_GAP), y)
+                pos[n] = (_MARGIN_X + i * (NODE_W + X_GAP), center_y)
             continue
 
         total_w = len(real) * NODE_W + max(0, len(real) - 1) * X_GAP
         x_start = max(_MARGIN_X, 600 - total_w // 2)
 
         for i, n in enumerate(real):
-            pos[n] = (x_start + i * (NODE_W + X_GAP), y)
+            pos[n] = (x_start + i * (NODE_W + X_GAP), _y_for(n))
 
-        # dummies: proportional x within real-node centre span
+        # dummies: proportional x within real-node centre span; y = layer middle
         cx_min = x_start + NODE_W // 2
         cx_max = x_start + (len(real) - 1) * (NODE_W + X_GAP) + NODE_W // 2
         n_all  = len(layer)
@@ -597,7 +628,7 @@ def _assign_coords(
             if n in real_nodes:
                 continue
             frac = i / max(n_all - 1, 1) if n_all > 1 else 0.5
-            pos[n] = (int(cx_min + frac * (cx_max - cx_min)), y)
+            pos[n] = (int(cx_min + frac * (cx_max - cx_min)), center_y)
 
     return pos, layer_tops
 

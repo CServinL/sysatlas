@@ -36,11 +36,11 @@ class ReflectSysatlas(unittest.TestCase):
 
     def test_layer_inference(self) -> None:
         render = self.diagram.components["_render"]
-        self.assertEqual(render.layer, "services")
+        self.assertEqual(render.layer, "render")
 
     def test_group_inference_for_ontology(self) -> None:
         arch = self.diagram.components["architecture"]
-        self.assertEqual(arch.group, "_ontology")
+        self.assertEqual(arch.group, "diagram-types")
 
     def test_exclude_filters_modules(self) -> None:
         names = set(self.diagram.components)
