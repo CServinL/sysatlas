@@ -70,6 +70,21 @@ class ArchitectureDiagram(BaseModel):
 - Every `Component.layer` must reference an existing `Layer`.
 - Every `Connection.source` and `Connection.target` must reference an existing `Component`.
 
+## Layout strategy
+
+`ArchitectureDiagram.strategy` selects the placement engine:
+
+- **`"layered"`** (default) — Sugiyama: layers stacked top-to-bottom by
+  `Layer.order`, edges routed by A\* between layer bands. See
+  `sysatlas/_layout.py`. This is the right choice for code-structure
+  diagrams (sources flow toward sinks through intermediate tiers).
+- **`"hub"`** — read/write loops around a central component. Five reserved
+  layer names drive placement: `"interfaces"` (top), `"write"` (left
+  column), `"hub"` (centre), `"read"` (right column), `"external"`
+  (bottom). See `sysatlas/_hub_layout.py`. This is the right choice when
+  the system's story *is* the loop around a shared model — humans/agents
+  and external systems on opposite sides of an integrating hub.
+
 ## Computed concepts (not user-declared)
 
 These emerge from the layout pipeline, not from the input:

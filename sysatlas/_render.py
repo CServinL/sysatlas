@@ -70,17 +70,25 @@ def _palette(groups: dict[str, dict]) -> dict[str, str]:
 
 def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict],
               layer_order: list[str], debug: bool = False,
-              extra_edges: list[dict] | None = None) -> str:
+              extra_edges: list[dict] | None = None,
+              strategy: str = "layered") -> str:
     """Build mxGraph XML.
 
     `extra_edges` are appended AFTER the main layout/routing is done.
     They get rendered as straight dashed edges between known node positions
     without influencing the Sugiyama layer assignment. Each entry has
     `source`, `target`, optional `label`, optional `style`, optional `color`.
+
+    `strategy` picks the placement engine: "layered" (Sugiyama) or "hub"
+    (read/write-loops shape with a central component).
     """
     extra_edges = extra_edges or []
     colors = _palette(groups)
-    pos, waypoints, node_heights = compute_layout(nodes, edges, layer_order, debug=debug)
+    if strategy == "hub":
+        from sysatlas._hub_layout import compute_hub_layout
+        pos, waypoints, node_heights = compute_hub_layout(nodes, edges, layer_order, debug=debug)
+    else:
+        pos, waypoints, node_heights = compute_layout(nodes, edges, layer_order, debug=debug)
 
     root_el = ET.Element("mxGraphModel", dx="1422", dy="762", grid="1",
                          gridSize="10", guides="1", tooltips="1",
@@ -380,7 +388,7 @@ def _viewer_tag(viewer: str) -> str:
 
 
 def render(nodes, edges, groups, layer_order, strategy, title, debug: bool = False, viewer: str = "cdn") -> str:
-    xml = build_xml(nodes, edges, groups, layer_order, debug=debug)
+    xml = build_xml(nodes, edges, groups, layer_order, debug=debug, strategy=strategy)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)
 

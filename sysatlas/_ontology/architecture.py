@@ -95,7 +95,7 @@ class ArchitectureDiagram(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     title: str = ""
-    strategy: Literal["layered"] = "layered"
+    strategy: Literal["layered", "hub"] = "layered"
     layers: list[Layer] = Field(default_factory=list)
     groups: dict[str, Group] = Field(default_factory=dict)
     components: dict[str, Component] = Field(default_factory=dict)
