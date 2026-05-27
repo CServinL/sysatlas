@@ -4,6 +4,8 @@
 got unreadable — and for the AI coding assistants that keep the
 diagrams in sync with the code.**
 
+![sysatlas — read/write loops around the ontology](docs/reflection/img/loops.png)
+
 Most diagram tools let you cram everything onto one canvas, then leave
 you fighting the layout engine. sysatlas does the opposite: focused
 views (~10 components each), and **splitting one system into many

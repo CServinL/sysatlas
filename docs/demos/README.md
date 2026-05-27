@@ -91,6 +91,21 @@ audit-style review.
 
 ---
 
+## hub — hub-and-spoke strategy (read/write loops around an integrating model)
+
+Drop the Sugiyama stack: `strategy="hub"` places one central component
+("hub") with consumers stacked on the right, sources on the left,
+interfaces on top, and external systems at the bottom. Five reserved
+layer names drive placement (`interfaces`, `write`, `hub`, `read`,
+`external`). See
+[`../ontology/architecture.md`](../ontology/architecture.md#layout-strategy).
+
+[source](hub.py) · [interactive HTML](html/hub.html)
+
+![hub](img/hub.png)
+
+---
+
 ## Distinction from neighbouring directories
 
 | Directory | Purpose |

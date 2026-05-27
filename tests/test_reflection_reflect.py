@@ -48,5 +48,18 @@ class ReflectSysatlas(unittest.TestCase):
             self.assertNotIn(excluded, names, f"{excluded} should be excluded")
 
 
+class BoundedComplexityWarning(unittest.TestCase):
+    def test_warns_when_over_limit(self) -> None:
+        import warnings
+        import sysatlas
+        r = sysatlas.reflect("sysatlas")
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            r.to_system_map()
+        msgs = [str(w.message) for w in caught if issubclass(w.category, UserWarning)]
+        self.assertTrue(any("to_system()" in m for m in msgs),
+                        f"expected bounded-complexity warning; got: {msgs}")
+
+
 if __name__ == "__main__":
     unittest.main()

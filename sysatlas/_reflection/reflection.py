@@ -6,7 +6,10 @@ This module holds the class.
 from __future__ import annotations
 
 import fnmatch
+import warnings
 from pathlib import Path
+
+_BOUNDED_COMPLEXITY_LIMIT = 15
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -111,6 +114,16 @@ class Reflection:
                     continue
                 seen_edges.add(key)
                 m.connect(src, tgt)
+        if len(m.diagram.components) > _BOUNDED_COMPLEXITY_LIMIT:
+            warnings.warn(
+                f"Reflected SystemMap has {len(m.diagram.components)} components "
+                f"(> {_BOUNDED_COMPLEXITY_LIMIT}). sysatlas targets bounded "
+                f"complexity per view (5–10 components). Consider "
+                f"`Reflection.to_system()` to split per top-level sub-package "
+                f"into multiple views.",
+                UserWarning,
+                stacklevel=2,
+            )
         return m
 
     def merge_with(self, overlay: SystemMap, title: str = "") -> SystemMap:

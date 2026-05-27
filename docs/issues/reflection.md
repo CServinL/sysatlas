@@ -104,15 +104,53 @@ invoke.
 
 ## Milestones
 
-| # | Slice | Acceptance |
-|---|---|---|
-| 0 | LLM guide + public hooks + README section | `python -c "import sysatlas; print(sysatlas.llm_guide())"` prints the guide; wheel includes the .md. |
-| 1 | AST parser + import resolver (`parser.py`, `resolve.py`) | Tests: scanning sysatlas itself returns the expected module graph; intra-project imports only. |
-| 2 | Module-granularity `Reflection.to_system_map()` (`__init__.py`, `layers.py`) | `sysatlas.reflect("sysatlas/").to_system_map().show()` produces a recognisable diagram of sysatlas itself. |
-| 3 | Hints file (`sysatlas.yaml`) | Test fixture project + hint overrides exclude tests dir and re-layer one module. |
-| 4 | Round-trip merge (`merge.py`) | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
-| 5 | Reflection demo: `docs/reflection/module-map.py` | Generates `module-map.html`; PNG committed; README table updated. |
-| 6 | Class granularity (`granularity="class"`) | Optional follow-up; not in first PR. |
+| # | Slice | Status | Acceptance |
+|---|---|---|---|
+| 0 | LLM guide + public hooks + README section | ✅ done | `python -c "import sysatlas; print(sysatlas.llm_guide())"` prints the guide; wheel includes the .md. |
+| 1 | AST parser + import resolver (`parser.py`, `resolve.py`) | ✅ done | Tests: scanning sysatlas itself returns the expected module graph; intra-project imports only. |
+| 2 | Module-granularity `Reflection.to_system_map()` (`reflection.py`, `layers.py`) | ✅ done | `sysatlas.reflect("sysatlas/").to_system_map().show()` produces a recognisable diagram of sysatlas itself. Bounded-complexity `warnings.warn` when >15 components, pointing at `to_system()`. |
+| 3 | Hints file (JSON-native, YAML if PyYAML installed) | ✅ done | Test fixture + hint overrides exclude tests dir and re-layer one module. `sysatlas/sysatlas.json` doubles as a real-world example. |
+| 4 | Round-trip merge (`merge.py`) | ✅ done | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
+| 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html`; PNG committed; README table updated. |
+| 6 | Class granularity (`granularity="class"`) | ⏸ deferred | Optional follow-up; not in this PR. |
+
+## Extras landed on the same branch (post-M5)
+
+Things the original scope didn't anticipate but that fell out of using
+the feature in anger:
+
+- **Multi-view reflection** — `Reflection.to_system()` returns a
+  `System` with one architecture model per top-level sub-package and
+  cross-package imports as `depends_on` trace links. Honours
+  bounded-complexity per view instead of dumping everything on one canvas.
+- **Hidden trace-overlay layer** — cross-view trace links render on a
+  dedicated mxGraph layer with `visible="0"`; the viewer's existing
+  layers toolbar toggles them. Stops the purple overlays from cluttering
+  the default view.
+- **Sub-bands per group within a layer** — when a `Layer` hosts >1
+  distinct `Group`, the placer splits the layer's vertical extent into
+  one horizontal sub-band per group. Derived from
+  `(Component.layer, Component.group)`; no new ontology type. Documented
+  on `Layer` in `_ontology/architecture.py` and as a Computed concept in
+  `docs/ontology/architecture.md`.
+- **Stub injection suppressed for trace-only refs** —
+  `System._collect_trace_overlays` no longer materialises phantom
+  components for trace endpoints that aren't local; only
+  connect()-driven `_inject_stubs` creates stubs.
+- **Hub-and-spoke layout strategy** — `ArchitectureDiagram.strategy="hub"`
+  selects `_hub_layout.py`. Five reserved layer names (`interfaces`,
+  `write`, `hub`, `read`, `external`) drive region placement.
+  Documented under "Layout strategy" in `docs/ontology/architecture.md`.
+  Demo: `docs/demos/hub.py`.
+- **Hidden quality-badge legend layer** — auto-generated legend listing
+  only the ISO 25010 categories actually used in this diagram, on a
+  togglable layer.
+- **Conceptual self-portrait** — `docs/reflection/loops.py` (hub
+  strategy) tells the read/write-loop story: User + LLM ↔ Ontology hub
+  ↔ Source code, with builders and reflection as the two write paths.
+- **Demo regen script** — `scripts/regen_demos.py` rebuilds every
+  `docs/demos/html/*.html` from its `.py` so committed artefacts stay
+  in sync with the renderer.
 
 ## Out of scope (for now)
 
