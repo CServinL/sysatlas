@@ -29,14 +29,6 @@ def _redirect(cls, target: Path) -> None:
     cls.show = show
 
 
-def _save_redirect(target: Path):
-    real_save = SystemMap.save
-    def save(self, path, viewer="cdn"):
-        real_save(self, str(target), viewer=viewer)
-    SystemMap.save = save
-    return real_save
-
-
 def run(demo: str) -> None:
     target = OUT / f"{demo}.html"
     _redirect(SystemMap, target)

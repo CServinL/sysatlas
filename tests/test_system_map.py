@@ -80,7 +80,8 @@ class SystemMapSave(unittest.TestCase):
         os.close(fd)
         m.save(path, viewer=viewer)
         try:
-            return open(path, encoding="utf-8").read()
+            with open(path, encoding="utf-8") as f:
+                return f.read()
         finally:
             os.unlink(path)
 

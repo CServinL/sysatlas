@@ -74,10 +74,15 @@ m.connect("api", "catalog", label="REST")
 m.save("storefront.html")
 ```
 
-The builder is fluent. `layer` must be one of: `edge`, `services`,
-`data`, `infra`, `external` (see `_ontology/architecture.py` for the
-authoritative list). `tech=` is metadata-only and is not rendered —
-if you want the tech visible, put it in `label=`.
+The builder is fluent. `layer` is a free-form string — the ontology
+does not enforce a fixed set. Recommended defaults for the default
+(`layered`) strategy are `edge`, `services`, `data`, `infra`,
+`external`; pick whatever vocabulary fits the diagram. Note that
+`strategy="hub"` reserves five layer names with specific placement
+meaning (`interfaces`, `write`, `hub`, `read`, `external`) — any
+other layer under the hub strategy is treated as `external`.
+`tech=` is metadata-only and is not rendered — if you want the tech
+visible, put it in `label=`.
 
 ## Multi-view (`System`) — when one diagram is too dense
 
