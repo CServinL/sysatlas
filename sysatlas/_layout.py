@@ -107,6 +107,49 @@ def compute_layout(
     return pos, routes, node_heights
 
 
+def finalize_routing(
+    pos: dict[str, tuple[int, int]],
+    nodes: dict[str, dict],
+    edges: list[dict],
+    layer_order: list[str] | None = None,
+    debug: bool = False,
+) -> tuple[dict[tuple[str, str], dict], dict[str, int]]:
+    """Strategy-agnostic post-placement pipeline.
+
+    Reuses what `compute_layout` already builds — port-aware node heights,
+    group label / connector obstacle zones, A* edge routing — so any
+    placement engine (layered, hub, future strategies) gets the same
+    routing quality without duplicating the work.
+
+    Skips Sugiyama-only steps (rank-based connector classification,
+    swap-and-reroute). Every edge between two placed nodes is treated
+    as a direct edge and routed with A*.
+    """
+    layer_order = layer_order or []
+    valid_edges: list[tuple[int, str, str]] = []
+    for i, e in enumerate(edges):
+        s, t = e["source"], e["target"]
+        if s in pos and t in pos and s != t:
+            valid_edges.append((i, s, t))
+
+    direct_edges_dicts = [{"source": s, "target": t} for _, s, t in valid_edges]
+    node_heights = compute_node_heights(direct_edges_dicts, pos, default_h=NODE_H)
+
+    label_zones = _group_label_zones(pos, nodes, layer_order, node_heights)
+    # No connector-glyph zones: non-Sugiyama strategies don't promote long
+    # spans to off-page connectors.
+    routes = route_edges(pos, (NODE_W, NODE_H), valid_edges,
+                         label_zones=label_zones,
+                         block_zones=[],
+                         node_heights=node_heights)
+
+    if debug:
+        print(f"\n── A* routed {len(valid_edges)} edges (hub/non-Sugiyama) ──")
+        _report_issues(pos, routes)
+
+    return routes, node_heights
+
+
 def _swap_and_reroute(pos, routes, layers, real_nodes, valid_edges, connector_edges, label_zones=None, node_heights=None, debug=False):
     """For each adjacent pair within each layer, try swapping their X positions.
     Re-route all edges with the new placement; keep the swap only if the cost
