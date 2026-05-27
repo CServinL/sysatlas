@@ -182,24 +182,18 @@ class System:
 
     def _collect_trace_overlays(self, sm: SystemMap, view: View,
                                 component_view: dict[str, str]) -> list[dict]:
-        """For each trace link whose endpoints can be reached in this view,
-        return an overlay edge spec. Endpoints not local but defined in
-        another view are added as stubs so the overlay has somewhere to land.
+        """For each trace link whose endpoints are already present in this
+        view, return an overlay edge spec.
 
-        Crucially, overlays are NOT added to the SystemMap's connections list,
-        so they don't influence Sugiyama. They are appended at render time as
-        post-layout dashed edges between known cells.
+        Traces do NOT inject components — they're overlay-only. If an
+        endpoint isn't local (either as a primary component or as a stub
+        injected by a connect() reference in `_inject_stubs`), the overlay
+        is silently dropped from this view. This keeps a pure trace()
+        reference from materialising phantom boxes on the canvas.
         """
         local_components = set(sm.diagram.components.keys())
         overlays: list[dict] = []
         for link in self._traces:
-            for end in (link.source, link.target):
-                if end.entity in local_components:
-                    continue
-                origin = component_view.get(end.entity)
-                if origin and origin != view.name:
-                    sm.add_component(end.entity, is_stub=True, defined_in=origin)
-                    local_components.add(end.entity)
             if (link.source.entity in local_components
                     and link.target.entity in local_components):
                 overlays.append({

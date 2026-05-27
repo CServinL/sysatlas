@@ -10,7 +10,10 @@ NODE_W = 160
 NODE_H = 60
 X_GAP  = 80
 Y_GAP  = 100   # minimum gap; expands dynamically per gutter
-SUB_GAP = 30   # vertical gap between sub-bands within a layer
+_GROUP_CHROME = 72   # fixed swimlane chrome stacked between adjacent
+                     # sub-band node boxes: 24px bottom-pad of group A
+                     # + 24px title bar of group B + 24px top-pad of group B.
+SUB_GAP = 40         # visible whitespace between two adjacent group rectangles.
 
 _MARGIN_X    = 80
 _MARGIN_Y    = 80
@@ -599,14 +602,14 @@ def _assign_coords(
         layer_tops[r] = layer_top
 
         band_of, n_bands = _band_index(layer)
-        prev_layer_h = NODE_H + (n_bands - 1) * (NODE_H + SUB_GAP)
+        prev_layer_h = NODE_H + (n_bands - 1) * (NODE_H + _GROUP_CHROME + SUB_GAP)
         center_y = layer_top + (prev_layer_h - NODE_H) // 2
 
         def _y_for(name: str) -> int:
             if name not in real_nodes:
                 return center_y
             g = nodes_meta.get(name, {}).get("group")
-            return layer_top + band_of.get(g, 0) * (NODE_H + SUB_GAP)
+            return layer_top + band_of.get(g, 0) * (NODE_H + _GROUP_CHROME + SUB_GAP)
 
         real = [n for n in layer if n in real_nodes]
         if not real:
