@@ -98,7 +98,7 @@ def compute_hub_layout(
     """Place nodes hub-and-spoke, then route edges with the shared A* pipeline."""
     pos, hub_heights = _place(nodes)
     routes, node_heights = finalize_routing(pos, nodes, edges,
-                                            layer_order=layer_order, debug=debug)
-    # Hub component's taller height overrides the port-based default.
-    node_heights.update(hub_heights)
+                                            layer_order=layer_order,
+                                            fixed_heights=hub_heights,
+                                            debug=debug)
     return pos, routes, node_heights

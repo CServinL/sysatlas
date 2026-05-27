@@ -112,6 +112,7 @@ def finalize_routing(
     nodes: dict[str, dict],
     edges: list[dict],
     layer_order: list[str] | None = None,
+    fixed_heights: dict[str, int] | None = None,
     debug: bool = False,
 ) -> tuple[dict[tuple[str, str], dict], dict[str, int]]:
     """Strategy-agnostic post-placement pipeline.
@@ -121,11 +122,17 @@ def finalize_routing(
     placement engine (layered, hub, future strategies) gets the same
     routing quality without duplicating the work.
 
+    `fixed_heights` lets the placement strategy lock heights for specific
+    nodes (e.g. the hub component is taller than NODE_H). Those heights
+    are visible to port assignment AND obstacle reasoning, so edges
+    attach on the correct side.
+
     Skips Sugiyama-only steps (rank-based connector classification,
     swap-and-reroute). Every edge between two placed nodes is treated
     as a direct edge and routed with A*.
     """
     layer_order = layer_order or []
+    fixed_heights = fixed_heights or {}
     valid_edges: list[tuple[int, str, str]] = []
     for i, e in enumerate(edges):
         s, t = e["source"], e["target"]
@@ -134,6 +141,9 @@ def finalize_routing(
 
     direct_edges_dicts = [{"source": s, "target": t} for _, s, t in valid_edges]
     node_heights = compute_node_heights(direct_edges_dicts, pos, default_h=NODE_H)
+    # Strategy-supplied heights win; port assignment will see the true size.
+    for name, h in fixed_heights.items():
+        node_heights[name] = max(node_heights.get(name, NODE_H), h)
 
     label_zones = _group_label_zones(pos, nodes, layer_order, node_heights)
     # No connector-glyph zones: non-Sugiyama strategies don't promote long
