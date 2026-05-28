@@ -83,7 +83,7 @@ diagram ontologies have schemas but no builder and no render pipeline.
 | tree | ✓ | ✓ `TreeMap` | ✓ |
 | er | ✓ | ✓ `ERMap` | ✓ |
 | sequence | ✓ | ✓ `SequenceMap` | ✓ |
-| uml_class | ✓ | ✗ | ✗ |
+| uml_class | ✓ | ✓ `ClassMap` | ✓ |
 | state_machine | ✓ | ✓ `StateMap` | ✓ |
 | bpmn | ✓ | ✗ | ✗ |
 | iso42010 (cross-cutting) | ✓ | ✓ (via `System`) | partial (multi-tab) |
@@ -100,8 +100,8 @@ Tree shipped. Remaining order — easier layouts and simpler renders first:
 | ~~2~~ | ~~sequence~~ | ~~fixed vertical lifelines, time on Y~~ | ~~medium~~ | **shipped** |
 | ~~3~~ | ~~er~~ | ~~grid placement~~ | ~~medium~~ | **shipped** |
 | ~~4~~ | ~~state_machine~~ | ~~layered BFS-rank~~ | ~~medium~~ | **shipped** |
-| 1 | uml_class | hierarchical (inheritance) or force | high | compartments (attrs, methods), 6 relation kinds, multiplicities |
-| 2 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
+| ~~5~~ | ~~uml_class~~ | ~~inheritance-ranked layered~~ | ~~high~~ | **shipped** |
+| 1 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
 
 The shared `_layout`, `_route`, `_place` primitives are reusable for any
 of these once the per-ontology builder + style mapping is written.

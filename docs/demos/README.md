@@ -130,6 +130,21 @@ actions, and transitions render as `event [guard] / action`.
 
 ---
 
+## uml_class — UML class diagram via ClassMap
+
+Payments domain showing all six relation kinds: inheritance (closed
+triangle), implementation (dashed + triangle), composition (filled
+diamond), aggregation (hollow diamond), association (plain), and
+dependency (dashed arrow). Stereotypes `«abstract»`/`«interface»`
+appear in the header; attributes and methods get visibility glyphs
+(+/-/#/~).
+
+[source](uml_class.py) · [interactive HTML](html/uml_class.html)
+
+![uml_class](img/uml_class.png)
+
+---
+
 ## hub — hub-and-spoke strategy (read/write loops around an integrating model)
 
 Drop the Sugiyama stack: `strategy="hub"` places one central component

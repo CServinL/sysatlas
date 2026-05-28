@@ -67,6 +67,28 @@ class Relation(BaseModel):
 - All `Relation.source` and `.target` must reference known `Class`es.
 - A class cannot inherit from itself.
 
+## Builder
+
+`sysatlas.ClassMap` is the fluent builder. See
+[`../demos/uml_class.py`](../demos/uml_class.py).
+
+```python
+import sysatlas
+
+c = sysatlas.ClassMap(title="Payments")
+c.cls("Payment", kind="abstract")
+c.method("Payment", "charge", return_type="bool", is_abstract=True)
+c.cls("CardPayment")
+c.attribute("CardPayment", "card_id", type="str")
+c.relate("CardPayment", "Payment", kind="inheritance")
+c.save("payments.html")
+```
+
+Methods: `cls`, `attribute`, `method`, `relate`, `show`, `save`.
+Inheritance and implementation relations drive top-down ranking;
+other relation kinds (composition, aggregation, association,
+dependency) overlay on that hierarchy.
+
 ## Distinction from ER
 
 UML Class is about **code structure** (methods, inheritance, visibility).
