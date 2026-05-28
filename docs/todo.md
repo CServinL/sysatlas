@@ -81,7 +81,7 @@ diagram ontologies have schemas but no builder and no render pipeline.
 |---|:---:|:---:|:---:|
 | architecture (C4 container) | ✓ | ✓ `SystemMap` / `System` | ✓ |
 | tree | ✓ | ✓ `TreeMap` | ✓ |
-| er | ✓ | ✗ | ✗ |
+| er | ✓ | ✓ `ERMap` | ✓ |
 | sequence | ✓ | ✓ `SequenceMap` | ✓ |
 | uml_class | ✓ | ✗ | ✗ |
 | state_machine | ✓ | ✗ | ✗ |
@@ -98,10 +98,10 @@ Tree shipped. Remaining order — easier layouts and simpler renders first:
 |---|---|---|---|---|
 | ~~1~~ | ~~tree~~ | ~~Reingold-Tilford~~ | ~~low~~ | **shipped** |
 | ~~2~~ | ~~sequence~~ | ~~fixed vertical lifelines, time on Y~~ | ~~medium~~ | **shipped** |
-| 1 | er | force-directed or layered | medium | similar shape to architecture; attributes inside boxes |
-| 2 | state_machine | force-directed | medium | composite states add nesting complexity |
-| 3 | uml_class | hierarchical (inheritance) or force | high | compartments (attrs, methods), 6 relation kinds, multiplicities |
-| 4 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
+| ~~3~~ | ~~er~~ | ~~grid placement~~ | ~~medium~~ | **shipped** |
+| 1 | state_machine | force-directed | medium | composite states add nesting complexity |
+| 2 | uml_class | hierarchical (inheritance) or force | high | compartments (attrs, methods), 6 relation kinds, multiplicities |
+| 3 | bpmn | horizontal time-flow with lanes | high | pools/lanes as swimlanes, gateway diamonds, event circles, multiple flow kinds |
 
 The shared `_layout`, `_route`, `_place` primitives are reusable for any
 of these once the per-ontology builder + style mapping is written.

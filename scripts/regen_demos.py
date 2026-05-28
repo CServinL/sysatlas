@@ -15,7 +15,7 @@ from __future__ import annotations
 import runpy
 from pathlib import Path
 
-from sysatlas import SequenceMap, SystemMap, System, TreeMap
+from sysatlas import ERMap, SequenceMap, SystemMap, System, TreeMap
 
 REPO = Path(__file__).resolve().parents[1]
 DEMOS = REPO / "docs" / "demos"
@@ -35,6 +35,7 @@ def run(demo: str) -> None:
     _redirect(System, target)
     _redirect(TreeMap, target)
     _redirect(SequenceMap, target)
+    _redirect(ERMap, target)
 
     if demo == "trace_matrix":
         # This demo saves two artefacts via System.save / save_trace_matrix.

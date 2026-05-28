@@ -30,6 +30,7 @@ The full surface exposed from `import sysatlas`:
 | `sysatlas.System` | Builder — multi-view Architecture Description | [`builders.md`](builders.md) §System | `sysatlas/system.py` |
 | `sysatlas.TreeMap` | Builder — tree/org-chart/mindmap diagram | [`builders.md`](builders.md) §TreeMap | `sysatlas/tree_map.py` |
 | `sysatlas.SequenceMap` | Builder — UML sequence diagram | [`ontology/sequence.md`](ontology/sequence.md) §Builder | `sysatlas/sequence_map.py` |
+| `sysatlas.ERMap` | Builder — Entity-Relationship diagram | [`ontology/er.md`](ontology/er.md) §Builder | `sysatlas/er_map.py` |
 | `sysatlas.reflect(path)` | Backward flow — AST-scan code → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
 | `sysatlas.Reflection` | Wrapper returned by `reflect()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
 | `sysatlas.llm_guide()` / `.llm_guide_path()` | Bundled LLM usage guide (string / path) | `sysatlas/LLM_GUIDE.md` | `sysatlas/__init__.py` |
@@ -69,7 +70,7 @@ in [`todo.md`](todo.md) §Ontology readiness).
 | Layered architecture (C4 container) | `sysatlas/_ontology/architecture.py` | [`ontology/architecture.md`](ontology/architecture.md) | end-to-end (`SystemMap`/`System`) |
 | Tree (org / mindmap / taxonomy / filesystem) | `sysatlas/_ontology/tree.py` | [`ontology/tree.md`](ontology/tree.md) | end-to-end (`TreeMap`) |
 | Sequence (UML) | `sysatlas/_ontology/sequence.py` | [`ontology/sequence.md`](ontology/sequence.md) | end-to-end (`SequenceMap`) |
-| Entity-Relationship | `sysatlas/_ontology/er.py` | [`ontology/er.md`](ontology/er.md) | schema only |
+| Entity-Relationship | `sysatlas/_ontology/er.py` | [`ontology/er.md`](ontology/er.md) | end-to-end (`ERMap`) |
 | Class (UML) | `sysatlas/_ontology/uml_class.py` | [`ontology/uml_class.md`](ontology/uml_class.md) | schema only |
 | State machine | `sysatlas/_ontology/state_machine.py` | [`ontology/state_machine.md`](ontology/state_machine.md) | schema only |
 | BPMN process (subset) | `sysatlas/_ontology/bpmn.py` | [`ontology/bpmn.md`](ontology/bpmn.md) | schema only |

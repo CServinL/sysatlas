@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Shop</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"2\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.5;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"40\" width=\"200\" height=\"82\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"Customer\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=12;fontStyle=1;align=center;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"40\" width=\"200\" height=\"28\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"\ud83d\udd11 id: uuid\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"68\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"\u25cf email: varchar\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"86\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"\u25cb name: varchar\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"104\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"7\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.5;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"320\" y=\"40\" width=\"200\" height=\"82\" as=\"geometry\" /></mxCell><mxCell id=\"8\" value=\"Order\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=12;fontStyle=1;align=center;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"320\" y=\"40\" width=\"200\" height=\"28\" as=\"geometry\" /></mxCell><mxCell id=\"9\" value=\"\ud83d\udd11 id: uuid\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"320\" y=\"68\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"10\" value=\"\u25cf placed_at: ts\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"320\" y=\"86\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"11\" value=\"\u25cf total: money\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"320\" y=\"104\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"12\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#374151;strokeWidth=2;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"600\" y=\"40\" width=\"200\" height=\"82\" as=\"geometry\" /></mxCell><mxCell id=\"13\" value=\"LineItem\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#374151;fontFamily=monospace;fontSize=12;fontStyle=1;align=center;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"600\" y=\"40\" width=\"200\" height=\"28\" as=\"geometry\" /></mxCell><mxCell id=\"14\" value=\"\ud83d\udd11 line_no: int\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"600\" y=\"68\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"15\" value=\"\u25cf qty: int\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"600\" y=\"86\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"16\" value=\"\u25cb price: money\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"600\" y=\"104\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"17\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#374151;strokeWidth=1.5;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"192\" width=\"200\" height=\"82\" as=\"geometry\" /></mxCell><mxCell id=\"18\" value=\"Product\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=12;fontStyle=1;align=center;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"192\" width=\"200\" height=\"28\" as=\"geometry\" /></mxCell><mxCell id=\"19\" value=\"\ud83d\udd11 sku: varchar\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"220\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"20\" value=\"\u25cf name: varchar\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"238\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"21\" value=\"\u25cb price: money\" style=\"text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;html=1;fontFamily=monospace;fontSize=10;spacingLeft=8;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"256\" width=\"200\" height=\"18\" as=\"geometry\" /></mxCell><mxCell id=\"22\" value=\"1 places *\" style=\"endArrow=none;html=1;rounded=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;\" edge=\"1\" source=\"2\" target=\"7\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"280\" y=\"81\" /><mxPoint x=\"280\" y=\"81\" /></Array></mxGeometry></mxCell><mxCell id=\"23\" value=\"1 contains 1..*\" style=\"endArrow=none;html=1;rounded=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;\" edge=\"1\" source=\"7\" target=\"12\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"560\" y=\"81\" /><mxPoint x=\"560\" y=\"81\" /></Array></mxGeometry></mxCell><mxCell id=\"24\" value=\"1 sold_as *\" style=\"endArrow=none;html=1;rounded=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;\" edge=\"1\" source=\"17\" target=\"12\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"420\" y=\"233\" /><mxPoint x=\"420\" y=\"81\" /></Array></mxGeometry></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.85) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.85) + 'px';
+}
+setSize();
+if (typeof GraphViewer === 'undefined') {
+  container.innerHTML = '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;">' +
+    '<strong>draw.io viewer not loaded.</strong></div>';
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() { if (viewer && viewer.graph) viewer.graph.fit(); }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    if (viewer && viewer.graph) viewer.graph.fit();
+  });
+}
+</script>
+</body>
+</html>

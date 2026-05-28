@@ -103,6 +103,20 @@ fraud-check branch. Reply messages render as dashed arrows.
 
 ---
 
+## er — Entity-Relationship diagram via ERMap
+
+Four-entity e-commerce schema (Customer, Order, LineItem, Product).
+LineItem is marked as a weak entity (yellow header, bolder border).
+Keys are marked with a key glyph; required attributes with a filled
+dot. Each relationship line carries source/target cardinality and a
+verb-phrase label.
+
+[source](er.py) · [interactive HTML](html/er.html)
+
+![er](img/er.png)
+
+---
+
 ## hub — hub-and-spoke strategy (read/write loops around an integrating model)
 
 Drop the Sugiyama stack: `strategy="hub"` places one central component
