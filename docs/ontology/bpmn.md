@@ -67,3 +67,29 @@ class Flow(BaseModel):    source: str; target: str; kind: FlowKind = "sequence"
 - Each Event/Activity/Gateway's `lane` must exist if specified.
 - Names must be unique across all flow-node types (events + activities + gateways).
 - Flow endpoints must be known flow nodes.
+
+## Builder
+
+`sysatlas.BPMNMap` is the fluent builder. See
+[`../demos/bpmn.py`](../demos/bpmn.py).
+
+```python
+import sysatlas
+
+b = sysatlas.BPMNMap(title="Order")
+b.pool("Co").lane("sales", pool="Co").lane("finance", pool="Co")
+b.event("start", kind="start", lane="sales")
+b.activity("take",  lane="sales", label="Take order")
+b.gateway("ok?",    kind="exclusive", lane="sales")
+b.activity("post",  lane="finance", label="Post to ledger")
+b.event("end", kind="end", lane="finance")
+b.flow("start", "take")
+b.flow("take",  "ok?")
+b.flow("ok?",   "post", kind="conditional")
+b.flow("post",  "end")
+b.save("order.html")
+```
+
+Methods: `pool`, `lane`, `event`, `activity`, `gateway`, `flow`, `show`,
+`save`. Layout places nodes left-to-right inside each lane in BFS order
+from the start event.

@@ -11,6 +11,7 @@ If you are an LLM helping a user with this library, call
 from pathlib import Path
 
 from sysatlas._reflection.reflection import Reflection, reflect
+from sysatlas.bpmn_map import BPMNMap
 from sysatlas.class_map import ClassMap
 from sysatlas.er_map import ERMap
 from sysatlas.sequence_map import SequenceMap
@@ -27,6 +28,7 @@ __all__ = [
     "ERMap",
     "StateMap",
     "ClassMap",
+    "BPMNMap",
     "Reflection",
     "reflect",
     "llm_guide",
