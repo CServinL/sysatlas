@@ -91,6 +91,18 @@ audit-style review.
 
 ---
 
+## sequence — UML sequence diagram via SequenceMap
+
+Eight messages across five actors (User/Web/Orders/Fraud/DB). Vertical
+lifelines, activations on each actor, and an `opt` frame wrapping the
+fraud-check branch. Reply messages render as dashed arrows.
+
+[source](sequence.py) · [interactive HTML](html/sequence.html)
+
+![sequence](img/sequence.png)
+
+---
+
 ## hub — hub-and-spoke strategy (read/write loops around an integrating model)
 
 Drop the Sugiyama stack: `strategy="hub"` places one central component

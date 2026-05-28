@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Checkout</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"2\" value=\"opt [risk threshold check]\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#6366f1;strokeWidth=1.5;dashed=0;align=left;verticalAlign=top;fontSize=10;fontStyle=1;spacingLeft=6;spacingTop=2;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"182\" width=\"1060\" height=\"104\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"\" style=\"rounded=0;fillColor=#e0e7ff;strokeColor=#6366f1;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"182\" width=\"224\" height=\"22\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"User\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"60\" y=\"40\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"User\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#e0e7ff;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"60\" y=\"510\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"\" style=\"endArrow=none;dashed=1;strokeColor=#9ca3af;strokeWidth=1;\" edge=\"1\" source=\"4\" target=\"5\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"7\" value=\"Web\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"280\" y=\"40\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"8\" value=\"Web\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fce7f3;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"280\" y=\"510\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"9\" value=\"\" style=\"endArrow=none;dashed=1;strokeColor=#9ca3af;strokeWidth=1;\" edge=\"1\" source=\"7\" target=\"8\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"10\" value=\"Orders\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"500\" y=\"40\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"11\" value=\"Orders\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"500\" y=\"510\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"12\" value=\"\" style=\"endArrow=none;dashed=1;strokeColor=#9ca3af;strokeWidth=1;\" edge=\"1\" source=\"10\" target=\"11\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"13\" value=\"Fraud\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"720\" y=\"40\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"14\" value=\"Fraud\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"720\" y=\"510\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"15\" value=\"\" style=\"endArrow=none;dashed=1;strokeColor=#9ca3af;strokeWidth=1;\" edge=\"1\" source=\"13\" target=\"14\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"16\" value=\"DB\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"940\" y=\"40\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"17\" value=\"DB\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"940\" y=\"510\" width=\"140\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"18\" value=\"\" style=\"endArrow=none;dashed=1;strokeColor=#9ca3af;strokeWidth=1;\" edge=\"1\" source=\"16\" target=\"17\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"19\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#a16207;fontSize=9;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"344\" y=\"120\" width=\"12\" height=\"350\" as=\"geometry\" /></mxCell><mxCell id=\"20\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#a16207;fontSize=9;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"564\" y=\"170\" width=\"12\" height=\"250\" as=\"geometry\" /></mxCell><mxCell id=\"21\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#a16207;fontSize=9;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"784\" y=\"220\" width=\"12\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"22\" value=\"\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#fef9c3;strokeColor=#a16207;fontSize=9;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"1004\" y=\"320\" width=\"12\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"23\" value=\"POST /checkout\" style=\"endArrow=block;endFill=1;html=1;rounded=0;strokeColor=#1f2937;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"130\" y=\"120\" as=\"sourcePoint\" /><mxPoint x=\"350\" y=\"120\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"24\" value=\"placeOrder()\" style=\"endArrow=block;endFill=1;html=1;rounded=0;strokeColor=#1f2937;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"350\" y=\"170\" as=\"sourcePoint\" /><mxPoint x=\"570\" y=\"170\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"25\" value=\"score(user, cart)\" style=\"endArrow=block;endFill=1;html=1;rounded=0;strokeColor=#1f2937;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"570\" y=\"220\" as=\"sourcePoint\" /><mxPoint x=\"790\" y=\"220\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"26\" value=\"risk=low\" style=\"endArrow=open;dashed=1;html=1;rounded=0;strokeColor=#6b7280;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"790\" y=\"270\" as=\"sourcePoint\" /><mxPoint x=\"570\" y=\"270\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"27\" value=\"INSERT order\" style=\"endArrow=block;endFill=1;html=1;rounded=0;strokeColor=#1f2937;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"570\" y=\"320\" as=\"sourcePoint\" /><mxPoint x=\"1010\" y=\"320\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"28\" value=\"ok\" style=\"endArrow=open;dashed=1;html=1;rounded=0;strokeColor=#6b7280;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"1010\" y=\"370\" as=\"sourcePoint\" /><mxPoint x=\"570\" y=\"370\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"29\" value=\"201 Created\" style=\"endArrow=open;dashed=1;html=1;rounded=0;strokeColor=#6b7280;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"570\" y=\"420\" as=\"sourcePoint\" /><mxPoint x=\"350\" y=\"420\" as=\"targetPoint\" /></mxGeometry></mxCell><mxCell id=\"30\" value=\"render receipt\" style=\"endArrow=open;dashed=1;html=1;rounded=0;strokeColor=#6b7280;fontSize=10;\" edge=\"1\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><mxPoint x=\"350\" y=\"470\" as=\"sourcePoint\" /><mxPoint x=\"130\" y=\"470\" as=\"targetPoint\" /></mxGeometry></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.85) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.85) + 'px';
+}
+setSize();
+if (typeof GraphViewer === 'undefined') {
+  container.innerHTML = '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;">' +
+    '<strong>draw.io viewer not loaded.</strong></div>';
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() { if (viewer && viewer.graph) viewer.graph.fit(); }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    if (viewer && viewer.graph) viewer.graph.fit();
+  });
+}
+</script>
+</body>
+</html>
