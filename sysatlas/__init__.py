@@ -13,6 +13,7 @@ from pathlib import Path
 from sysatlas._reflection.reflection import Reflection, reflect
 from sysatlas.er_map import ERMap
 from sysatlas.sequence_map import SequenceMap
+from sysatlas.state_map import StateMap
 from sysatlas.system import System
 from sysatlas.system_map import SystemMap
 from sysatlas.tree_map import TreeMap
@@ -23,6 +24,7 @@ __all__ = [
     "TreeMap",
     "SequenceMap",
     "ERMap",
+    "StateMap",
     "Reflection",
     "reflect",
     "llm_guide",

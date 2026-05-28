@@ -117,6 +117,19 @@ verb-phrase label.
 
 ---
 
+## state_machine — state chart via StateMap
+
+Order-lifecycle state machine: Pending → Paid → Shipped → Delivered,
+with a Cancelled side-branch. Initial pseudo-state is a filled circle;
+final is a bullseye. Each state carries optional `entry/do/exit`
+actions, and transitions render as `event [guard] / action`.
+
+[source](state_machine.py) · [interactive HTML](html/state_machine.html)
+
+![state_machine](img/state_machine.png)
+
+---
+
 ## hub — hub-and-spoke strategy (read/write loops around an integrating model)
 
 Drop the Sugiyama stack: `strategy="hub"` places one central component

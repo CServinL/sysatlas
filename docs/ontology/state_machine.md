@@ -57,3 +57,25 @@ class Transition(BaseModel):
 - All `Transition.source`/`.target` reference known states.
 - A `final` state cannot have outgoing transitions.
 - `State.parent` (for nesting) must reference a known state.
+
+## Builder
+
+`sysatlas.StateMap` is the fluent builder. See
+[`../demos/state_machine.py`](../demos/state_machine.py).
+
+```python
+import sysatlas
+
+s = sysatlas.StateMap(title="Order")
+s.initial("start")
+s.state("Pending", entry="reserve_stock")
+s.state("Paid", do="charge_card")
+s.final("end")
+s.transition("start", "Pending")
+s.transition("Pending", "Paid", event="payment_received")
+s.transition("Paid", "end")
+s.save("order.html")
+```
+
+Methods: `state`, `initial`, `final`, `transition`, `show`, `save`.
+`initial()`/`final()` are sugar for `state(..., kind="initial"/"final")`.

@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Order lifecycle</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"2\" value=\"\" style=\"ellipse;whiteSpace=wrap;html=1;fillColor=#1f2937;strokeColor=#1f2937;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"41\" width=\"48\" height=\"48\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"Pending&lt;br&gt;&lt;i&gt;entry / reserve_stock&lt;/i&gt;\" style=\"rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"160\" width=\"130\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"Paid&lt;br&gt;&lt;i&gt;do / charge_card&lt;/i&gt;\" style=\"rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"280\" width=\"130\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"Cancelled\" style=\"rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"230\" y=\"280\" width=\"130\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"Shipped&lt;br&gt;&lt;i&gt;entry / notify_carrier&lt;/i&gt;\" style=\"rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"400\" width=\"130\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"7\" value=\"Delivered\" style=\"rounded=1;arcSize=30;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#374151;fontFamily=monospace;fontSize=11;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"520\" width=\"130\" height=\"50\" as=\"geometry\" /></mxCell><mxCell id=\"8\" value=\"\" style=\"ellipse;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1f2937;strokeWidth=3;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"40\" y=\"641\" width=\"48\" height=\"48\" as=\"geometry\" /></mxCell><mxCell id=\"9\" value=\"\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"2\" target=\"3\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"10\" value=\"payment_received\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"3\" target=\"4\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"11\" value=\"timeout [age&gt;72h]\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"3\" target=\"5\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"12\" value=\"picked_up\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"4\" target=\"6\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"13\" value=\"refund_requested\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"4\" target=\"5\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"14\" value=\"signature_collected\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"6\" target=\"7\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"15\" value=\"\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"7\" target=\"8\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell><mxCell id=\"16\" value=\"\" style=\"endArrow=block;endFill=1;html=1;rounded=1;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;\" edge=\"1\" source=\"5\" target=\"8\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\" /></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.85) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.85) + 'px';
+}
+setSize();
+if (typeof GraphViewer === 'undefined') {
+  container.innerHTML = '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;">' +
+    '<strong>draw.io viewer not loaded.</strong></div>';
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() { if (viewer && viewer.graph) viewer.graph.fit(); }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    if (viewer && viewer.graph) viewer.graph.fit();
+  });
+}
+</script>
+</body>
+</html>
