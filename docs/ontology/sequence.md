@@ -60,3 +60,24 @@ class Frame(BaseModel):
 Time order is the **only** spatial dimension that matters; messages are
 plotted at `y = order * spacing`. Actors are at fixed `x`. Frames are
 rendered as rectangles spanning the range of messages they wrap.
+
+## Builder
+
+`sysatlas.SequenceMap` is the fluent builder. See
+[`../demos/sequence.py`](../demos/sequence.py).
+
+```python
+import sysatlas
+
+s = sysatlas.SequenceMap(title="Checkout")
+s.actor("User", kind="actor").actor("Web", kind="boundary").actor("Orders")
+s.send("User", "Web", label="POST /checkout")
+s.send("Web", "Orders", label="placeOrder()")
+s.send("Orders", "Web", label="201", kind="reply")
+s.activate("Web", 1, 3)
+s.frame("opt", 2, 3, label="happy path")
+s.save("checkout.html")
+```
+
+Methods: `actor`, `send`, `activate`, `frame`, `show`, `save`. Message
+`order` auto-increments from 1; pass an explicit `order=` to back-fill.

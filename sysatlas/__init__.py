@@ -11,6 +11,11 @@ If you are an LLM helping a user with this library, call
 from pathlib import Path
 
 from sysatlas._reflection.reflection import Reflection, reflect
+from sysatlas.bpmn_map import BPMNMap
+from sysatlas.class_map import ClassMap
+from sysatlas.er_map import ERMap
+from sysatlas.sequence_map import SequenceMap
+from sysatlas.state_map import StateMap
 from sysatlas.system import System
 from sysatlas.system_map import SystemMap
 from sysatlas.tree_map import TreeMap
@@ -19,6 +24,11 @@ __all__ = [
     "SystemMap",
     "System",
     "TreeMap",
+    "SequenceMap",
+    "ERMap",
+    "StateMap",
+    "ClassMap",
+    "BPMNMap",
     "Reflection",
     "reflect",
     "llm_guide",

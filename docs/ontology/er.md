@@ -53,6 +53,27 @@ class Relationship(BaseModel):
 
 - Every `Relationship.source` and `.target` must reference a known `Entity`.
 
+## Builder
+
+`sysatlas.ERMap` is the fluent builder. See
+[`../demos/er.py`](../demos/er.py).
+
+```python
+import sysatlas
+
+e = sysatlas.ERMap(title="Shop")
+e.entity("Customer")
+e.attribute("Customer", "id",    type="uuid", is_key=True)
+e.attribute("Customer", "email", is_required=True)
+e.entity("Order")
+e.attribute("Order", "id", type="uuid", is_key=True)
+e.relate("Customer", "Order", name="places", source_card="1", target_card="*")
+e.save("shop.html")
+```
+
+Methods: `entity`, `attribute`, `relate`, `show`, `save`. `attribute()`
+auto-creates the entity if it doesn't exist yet.
+
 ## Distinction from Class diagrams
 
 ER focuses on **data shape**: what's stored, how rows relate. Class

@@ -91,6 +91,73 @@ audit-style review.
 
 ---
 
+## sequence — UML sequence diagram via SequenceMap
+
+Eight messages across five actors (User/Web/Orders/Fraud/DB). Vertical
+lifelines, activations on each actor, and an `opt` frame wrapping the
+fraud-check branch. Reply messages render as dashed arrows.
+
+[source](sequence.py) · [interactive HTML](html/sequence.html)
+
+![sequence](img/sequence.png)
+
+---
+
+## er — Entity-Relationship diagram via ERMap
+
+Four-entity e-commerce schema (Customer, Order, LineItem, Product).
+LineItem is marked as a weak entity (yellow header, bolder border).
+Keys are marked with a key glyph; required attributes with a filled
+dot. Each relationship line carries source/target cardinality and a
+verb-phrase label.
+
+[source](er.py) · [interactive HTML](html/er.html)
+
+![er](img/er.png)
+
+---
+
+## state_machine — state chart via StateMap
+
+Order-lifecycle state machine: Pending → Paid → Shipped → Delivered,
+with a Cancelled side-branch. Initial pseudo-state is a filled circle;
+final is a bullseye. Each state carries optional `entry/do/exit`
+actions, and transitions render as `event [guard] / action`.
+
+[source](state_machine.py) · [interactive HTML](html/state_machine.html)
+
+![state_machine](img/state_machine.png)
+
+---
+
+## uml_class — UML class diagram via ClassMap
+
+Payments domain showing all six relation kinds: inheritance (closed
+triangle), implementation (dashed + triangle), composition (filled
+diamond), aggregation (hollow diamond), association (plain), and
+dependency (dashed arrow). Stereotypes `«abstract»`/`«interface»`
+appear in the header; attributes and methods get visibility glyphs
+(+/-/#/~).
+
+[source](uml_class.py) · [interactive HTML](html/uml_class.html)
+
+![uml_class](img/uml_class.png)
+
+---
+
+## bpmn — BPMN process diagram via BPMNMap
+
+A two-lane purchase-order process inside one pool. Start event in the
+Sales lane, an exclusive gateway routes based on approval needs, and
+both branches merge before the end event in Finance. Conditional and
+default flows render with their BPMN tail markers.
+
+[source](bpmn.py) · [interactive HTML](html/bpmn.html)
+
+![bpmn](img/bpmn.png)
+
+---
+
 ## hub — hub-and-spoke strategy (read/write loops around an integrating model)
 
 Drop the Sugiyama stack: `strategy="hub"` places one central component

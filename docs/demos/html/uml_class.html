@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Payments domain</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+function fitGraph(viewer, container) {
+  if (!viewer || !viewer.graph) return;
+  var graph = viewer.graph;
+  graph.view.setScale(1);
+  graph.view.setTranslate(0, 0);
+  var bounds = graph.getGraphBounds();
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+  var pad = 30;
+  var availW = container.clientWidth - pad * 2;
+  var availH = container.clientHeight - pad * 2;
+  var scale = Math.min(availW / bounds.width, availH / bounds.height);
+  if (scale > 4) scale = 4;
+  if (scale < 0.1) scale = 0.1;
+  graph.view.setScale(scale);
+  var b2 = graph.getGraphBounds();
+  var tx = (container.clientWidth - b2.width) / 2 - b2.x;
+  var ty = (container.clientHeight - b2.height) / 2 - b2.y;
+  graph.view.setTranslate(tx / scale, ty / scale);
+}
+
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"trace-layer\" parent=\"0\" value=\"Traces\" visible=\"0\" /><mxCell id=\"legend-layer\" parent=\"0\" value=\"Legend\" visible=\"0\" /><mxCell id=\"2\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;&lt;i&gt;\u00abinterface\u00bb&lt;/i&gt;&lt;br&gt;Auditable&lt;/div&gt;&lt;i&gt;+ auditLog() : str&lt;/i&gt;\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#7e22ce;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"1920\" y=\"95\" width=\"160\" height=\"80\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;&lt;i&gt;\u00ababstract\u00bb&lt;/i&gt;&lt;br&gt;Payment&lt;/div&gt;+ id : UUID&lt;br&gt;+ amount : Money&lt;div style='border-top:1px solid #94a3b8;margin-top:4px;padding-top:2px;'&gt;&lt;/div&gt;&lt;i&gt;+ charge() : bool&lt;/i&gt;&lt;br&gt;+ refund() : bool\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"2160\" y=\"95\" width=\"160\" height=\"128\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;CardPayment&lt;/div&gt;+ card_id : str&lt;div style='border-top:1px solid #94a3b8;margin-top:4px;padding-top:2px;'&gt;&lt;/div&gt;+ charge() : bool&lt;br&gt;+ authorize(amount: Money) : str\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"3278\" y=\"293\" width=\"160\" height=\"96\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;BankPayment&lt;/div&gt;+ iban : str&lt;div style='border-top:1px solid #94a3b8;margin-top:4px;padding-top:2px;'&gt;&lt;/div&gt;+ charge() : bool\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"2242\" y=\"293\" width=\"160\" height=\"80\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Customer&lt;/div&gt;+ id : UUID&lt;br&gt;+ email : str\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"2400\" y=\"80\" width=\"160\" height=\"80\" as=\"geometry\" /></mxCell><mxCell id=\"7\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Order&lt;/div&gt;+ id : UUID&lt;br&gt;+ total : Money\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"2640\" y=\"80\" width=\"160\" height=\"80\" as=\"geometry\" /></mxCell><mxCell id=\"8\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;LineItem&lt;/div&gt;+ sku : str&lt;br&gt;+ qty : int\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"2880\" y=\"80\" width=\"160\" height=\"80\" as=\"geometry\" /></mxCell><mxCell id=\"9\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Cart&lt;/div&gt;\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"3120\" y=\"80\" width=\"160\" height=\"48\" as=\"geometry\" /></mxCell><mxCell id=\"10\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Product&lt;/div&gt;\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"3360\" y=\"80\" width=\"160\" height=\"48\" as=\"geometry\" /></mxCell><mxCell id=\"11\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;FraudClient&lt;/div&gt;\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"3600\" y=\"95\" width=\"160\" height=\"48\" as=\"geometry\" /></mxCell><mxCell id=\"12\" value=\"\" style=\"rounded=1;exitX=0.0;exitY=0.6667;exitDx=0;exitDy=0;entryX=1.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=block;endFill=0;endSize=14;\" edge=\"1\" source=\"4\" target=\"3\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"3265\" y=\"357\" /><mxPoint x=\"3265\" y=\"355\" /><mxPoint x=\"2445\" y=\"355\" /><mxPoint x=\"2445\" y=\"195\" /><mxPoint x=\"2335\" y=\"195\" /><mxPoint x=\"2335\" y=\"159\" /></Array></mxGeometry></mxCell><mxCell id=\"13\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=0.0;exitDx=0;exitDy=0;entryX=0.5;entryY=1.0;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=block;endFill=0;endSize=14;\" edge=\"1\" source=\"5\" target=\"3\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"2322\" y=\"285\" /><mxPoint x=\"2325\" y=\"285\" /><mxPoint x=\"2325\" y=\"235\" /><mxPoint x=\"2240\" y=\"235\" /></Array></mxGeometry></mxCell><mxCell id=\"14\" value=\"\" style=\"rounded=1;dashed=1;exitX=0.0;exitY=0.3333;exitDx=0;exitDy=0;entryX=1.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=block;endFill=0;endSize=14;\" edge=\"1\" source=\"4\" target=\"2\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"3265\" y=\"325\" /><mxPoint x=\"3075\" y=\"325\" /><mxPoint x=\"3075\" y=\"45\" /><mxPoint x=\"2095\" y=\"45\" /><mxPoint x=\"2095\" y=\"135\" /></Array></mxGeometry></mxCell><mxCell id=\"15\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=open;startArrow=diamondThin;startFill=1;startSize=14;\" edge=\"1\" source=\"7\" target=\"8\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"2815\" y=\"120\" /><mxPoint x=\"2815\" y=\"125\" /><mxPoint x=\"2875\" y=\"125\" /><mxPoint x=\"2875\" y=\"120\" /></Array></mxGeometry></mxCell><mxCell id=\"10015\" value=\"1..*\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"15\"><mxGeometry x=\"-0.2222\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"16\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=open;startArrow=diamondThin;startFill=0;startSize=14;\" edge=\"1\" source=\"9\" target=\"10\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"3295\" y=\"110\" /><mxPoint x=\"3295\" y=\"115\" /><mxPoint x=\"3355\" y=\"115\" /><mxPoint x=\"3355\" y=\"110\" /></Array></mxGeometry></mxCell><mxCell id=\"10016\" value=\"*\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"16\"><mxGeometry x=\"-0.2222\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"17\" value=\"\" style=\"rounded=1;exitX=1.0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=open;\" edge=\"1\" source=\"6\" target=\"7\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"2575\" y=\"120\" /><mxPoint x=\"2575\" y=\"125\" /><mxPoint x=\"2635\" y=\"125\" /><mxPoint x=\"2635\" y=\"120\" /></Array></mxGeometry></mxCell><mxCell id=\"10017\" value=\"1 *\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"17\"><mxGeometry x=\"-0.2222\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"0\" y=\"-10\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"18\" value=\"\" style=\"rounded=1;dashed=1;exitX=0.5;exitY=0.0;exitDx=0;exitDy=0;entryX=0.5;entryY=1.0;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=open;\" edge=\"1\" source=\"4\" target=\"11\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"3358\" y=\"285\" /><mxPoint x=\"3355\" y=\"285\" /><mxPoint x=\"3355\" y=\"175\" /><mxPoint x=\"3685\" y=\"175\" /><mxPoint x=\"3685\" y=\"165\" /><mxPoint x=\"3680\" y=\"165\" /></Array></mxGeometry></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+var viewerMode = "cdn";
+
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.8) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.8) + 'px';
+}
+
+setSize();
+
+if (typeof GraphViewer === 'undefined' || typeof mxUtils === 'undefined') {
+  
+  var msg = '';
+  if (viewerMode === 'cdn') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Could not fetch <code>viewer-static.min.js</code> from the CDN.<br>' +
+          'Check your internet connection, or regenerate with ' +
+          "<code>viewer='local'</code> or <code>viewer='embed'</code>.";
+  } else if (viewerMode === 'local') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Expected <code>viewer-static.min.js</code> next to this HTML file but did not find it.<br>' +
+          'Re-run save with the same path so the file is copied alongside.';
+  } else {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'The embedded viewer JS appears to be corrupted.';
+  }
+  container.innerHTML =
+    '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;' +
+    'background:#fef2f2;border:1px solid #fecaca;border-radius:6px;' +
+    'max-width:560px;margin:auto;line-height:1.5;">' + msg + '</div>';
+
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() { fitGraph(viewer, container); }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    fitGraph(viewer, container);
+  });
+}
+</script>
+</body>
+</html>

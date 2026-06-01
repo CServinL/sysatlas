@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Shop</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; background: #f1f5f9; font-family: sans-serif; }
+
+  body { display: flex; align-items: center; justify-content: center; }
+  #diagram {
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    background: #ffffff;
+    overflow: hidden;
+    position: relative;
+  }
+
+</style>
+</head>
+<body>
+<div id="diagram"></div>
+<script src="https://viewer.diagrams.net/js/viewer-static.min.js"></script>
+<script>
+function fitGraph(viewer, container) {
+  if (!viewer || !viewer.graph) return;
+  var graph = viewer.graph;
+  graph.view.setScale(1);
+  graph.view.setTranslate(0, 0);
+  var bounds = graph.getGraphBounds();
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+  var pad = 30;
+  var availW = container.clientWidth - pad * 2;
+  var availH = container.clientHeight - pad * 2;
+  var scale = Math.min(availW / bounds.width, availH / bounds.height);
+  if (scale > 4) scale = 4;
+  if (scale < 0.1) scale = 0.1;
+  graph.view.setScale(scale);
+  var b2 = graph.getGraphBounds();
+  var tx = (container.clientWidth - b2.width) / 2 - b2.x;
+  var ty = (container.clientHeight - b2.height) / 2 - b2.y;
+  graph.view.setTranslate(tx / scale, ty / scale);
+}
+
+var xmlStr = "<mxGraphModel dx=\"1422\" dy=\"762\" grid=\"1\" gridSize=\"10\" guides=\"1\" tooltips=\"1\" connect=\"1\" arrows=\"1\" fold=\"1\" page=\"1\" pageScale=\"1\" pageWidth=\"1169\" pageHeight=\"827\" math=\"0\" shadow=\"0\"><root><mxCell id=\"0\" /><mxCell id=\"1\" parent=\"0\" /><mxCell id=\"trace-layer\" parent=\"0\" value=\"Traces\" visible=\"0\" /><mxCell id=\"legend-layer\" parent=\"0\" value=\"Legend\" visible=\"0\" /><mxCell id=\"2\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Customer&lt;/div&gt;&lt;b&gt;\ud83d\udd11&lt;/b&gt; id : uuid&lt;br&gt;\u25cf email : varchar&lt;br&gt;\u25cb name : varchar\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"572\" y=\"95\" width=\"180\" height=\"88\" as=\"geometry\" /></mxCell><mxCell id=\"3\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Order&lt;/div&gt;&lt;b&gt;\ud83d\udd11&lt;/b&gt; id : uuid&lt;br&gt;\u25cf placed_at : ts&lt;br&gt;\u25cf total : money\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"691\" y=\"268\" width=\"180\" height=\"88\" as=\"geometry\" /></mxCell><mxCell id=\"4\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;LineItem&lt;/div&gt;&lt;b&gt;\ud83d\udd11&lt;/b&gt; line_no : int&lt;br&gt;\u25cf qty : int&lt;br&gt;\u25cb price : money\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#a16207;strokeWidth=2.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"691\" y=\"441\" width=\"180\" height=\"88\" as=\"geometry\" /></mxCell><mxCell id=\"5\" value=\"&lt;div style='text-align:center;font-weight:bold;border-bottom:1px solid #94a3b8;padding-bottom:2px;margin-bottom:4px;'&gt;Product&lt;/div&gt;&lt;b&gt;\ud83d\udd11&lt;/b&gt; sku : varchar&lt;br&gt;\u25cf name : varchar&lt;br&gt;\u25cb price : money\" style=\"rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1e40af;strokeWidth=1.5;fontFamily=monospace;fontSize=10;align=left;verticalAlign=top;spacingLeft=8;spacingRight=8;spacingTop=4;\" vertex=\"1\" parent=\"1\"><mxGeometry x=\"812\" y=\"95\" width=\"180\" height=\"88\" as=\"geometry\" /></mxCell><mxCell id=\"6\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.5;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=none;\" edge=\"1\" source=\"2\" target=\"3\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"652\" y=\"190\" /><mxPoint x=\"657\" y=\"190\" /><mxPoint x=\"657\" y=\"230\" /><mxPoint x=\"767\" y=\"230\" /><mxPoint x=\"767\" y=\"260\" /><mxPoint x=\"771\" y=\"260\" /></Array></mxGeometry></mxCell><mxCell id=\"10006\" value=\"1 places *\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"6\"><mxGeometry x=\"-0.6863\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"7\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.3333;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=none;\" edge=\"1\" source=\"3\" target=\"4\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"771\" y=\"370\" /><mxPoint x=\"767\" y=\"370\" /><mxPoint x=\"767\" y=\"430\" /><mxPoint x=\"744\" y=\"430\" /></Array></mxGeometry></mxCell><mxCell id=\"10007\" value=\"1 contains 1..*\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"7\"><mxGeometry x=\"-0.4107\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell><mxCell id=\"8\" value=\"\" style=\"rounded=1;exitX=0.5;exitY=1.0;exitDx=0;exitDy=0;entryX=0.6667;entryY=0.0;entryDx=0;entryDy=0;strokeColor=#1f2937;strokeWidth=1.5;fontSize=10;labelBackgroundColor=#ffffff;labelBorderColor=none;endArrow=none;\" edge=\"1\" source=\"5\" target=\"4\" parent=\"1\"><mxGeometry relative=\"1\" as=\"geometry\"><Array as=\"points\"><mxPoint x=\"892\" y=\"190\" /><mxPoint x=\"897\" y=\"190\" /><mxPoint x=\"897\" y=\"430\" /><mxPoint x=\"797\" y=\"430\" /></Array></mxGeometry></mxCell><mxCell id=\"10008\" value=\"1 sold_as *\" style=\"edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;\" vertex=\"1\" connectable=\"0\" parent=\"8\"><mxGeometry x=\"-0.6033\" y=\"0\" relative=\"1\" as=\"geometry\"><mxPoint x=\"10\" y=\"0\" as=\"offset\" /></mxGeometry></mxCell></root></mxGraphModel>";
+var config = {"nav": true, "resize": false, "toolbar": "zoom layers lightbox", "fit": true, "page": false};
+var container = document.getElementById('diagram');
+var viewerMode = "cdn";
+
+function setSize() {
+  container.style.width  = Math.round(window.innerWidth  * 0.8) + 'px';
+  container.style.height = Math.round(window.innerHeight * 0.8) + 'px';
+}
+
+setSize();
+
+if (typeof GraphViewer === 'undefined' || typeof mxUtils === 'undefined') {
+  
+  var msg = '';
+  if (viewerMode === 'cdn') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Could not fetch <code>viewer-static.min.js</code> from the CDN.<br>' +
+          'Check your internet connection, or regenerate with ' +
+          "<code>viewer='local'</code> or <code>viewer='embed'</code>.";
+  } else if (viewerMode === 'local') {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'Expected <code>viewer-static.min.js</code> next to this HTML file but did not find it.<br>' +
+          'Re-run save with the same path so the file is copied alongside.';
+  } else {
+    msg = '<strong>draw.io viewer not loaded.</strong><br>' +
+          'The embedded viewer JS appears to be corrupted.';
+  }
+  container.innerHTML =
+    '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;' +
+    'background:#fef2f2;border:1px solid #fecaca;border-radius:6px;' +
+    'max-width:560px;margin:auto;line-height:1.5;">' + msg + '</div>';
+
+} else {
+  var xmlDoc = mxUtils.parseXml(xmlStr);
+  var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
+  setTimeout(function() { fitGraph(viewer, container); }, 50);
+  window.addEventListener('resize', function() {
+    setSize();
+    fitGraph(viewer, container);
+  });
+}
+</script>
+</body>
+</html>
