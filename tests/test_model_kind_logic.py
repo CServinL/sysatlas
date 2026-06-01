@@ -2,7 +2,7 @@
 import unittest
 
 from sysatlas._ontology.iso42010 import (
-    ArchitectureDescription, Concern, Stakeholder, View, Viewpoint,
+    ArchitectureDescription, Concern, Stakeholder, Viewpoint,
 )
 from sysatlas._ontology.model_kind import ModelKind
 from sysatlas._ontology.model_kinds import DEFAULT_KINDS

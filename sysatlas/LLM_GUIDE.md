@@ -68,8 +68,10 @@ should reach them only through the builder methods.
 
 Each `*Map` is fluent and follows the same shape: chainable methods,
 `.diagram` for the validated Pydantic instance, `.show()` / `.save()`
-to render. For the per-kind method names check the matching ontology
-file under `sysatlas/_ontology/`.
+to render. For the per-kind **builder methods** check `docs/builders.md`
+and the matching `docs/ontology/<kind>.md` § Builder. The
+`sysatlas/_ontology/<kind>.py` files are the source of truth for
+*schema field names*, not for builder method names.
 
 ## Forward flow — minimal example
 
