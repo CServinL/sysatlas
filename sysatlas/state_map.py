@@ -163,6 +163,7 @@ class StateMap:
                 "label": " ".join(parts),
                 "color": "#1f2937",
                 "style_full": _TRANSITION_STYLE,
+                "no_connector": True,
             })
 
         return nodes, edges, groups, layer_order

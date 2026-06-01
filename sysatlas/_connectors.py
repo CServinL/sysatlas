@@ -21,7 +21,7 @@ def classify_edges(
             direct.append(e)
             continue
         span = abs(rank[t] - rank[s])
-        if span >= LONG_LAYER_THRESHOLD:
+        if span >= LONG_LAYER_THRESHOLD and not e.get("no_connector"):
             connectors.append(e)
         else:
             direct.append(e)
