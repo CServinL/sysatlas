@@ -122,18 +122,21 @@ What ISO 42010 / the wider literature suggests we should add eventually:
 
 ## 10. Recommended adoption priority
 
-**High value / low cost — do soon:**
+**Shipped:**
 
-1. Adopt **ISO 42010 vocabulary** internally (rename `Ontology` → `ModelKind`, etc.).
-2. Add **Mermaid + PlantUML export** for interop.
-3. Add **trace links** between models.
-4. Add **quality attributes** (ISO 25010) as a field on Component / Connection.
+- **Trace links** between models — `sysatlas/_ontology/trace.py` (SysML vocab) + `System.trace()` overlay + matrix view-kind. See [`ontology/trace.md`](ontology/trace.md).
+- **Quality attributes** (ISO 25010) as a field on Component / Connection — `sysatlas/_ontology/qualities.py`, rendered as letter badges on nodes and edges. See [`ontology/qualities.md`](ontology/qualities.md).
+- **ISO 42010 vocabulary** — decided *against* renaming `Ontology` → `ModelKind` (the Ontology is the typed schema; a ModelKind is a named *usage* of an Ontology). Instead added a `ModelKind` taxonomy layer on top, with a bundled `DEFAULT_KINDS` registry (c4-context / c4-container / uml-sequence / …). See [`ontology/model_kinds.md`](ontology/model_kinds.md).
+
+**Still high value / low cost — do soon:**
+
+1. Add **Mermaid + PlantUML export** for interop.
 
 **Consider after that — medium cost, real value:**
 
-5. **ArchiMate** as an alternative architecture ontology for enterprise use.
-6. **Reuse ELK** if our A\* + Sugiyama starts struggling at larger scales.
-7. **Event Storming / DDD Context Map** as new ontologies.
+2. **ArchiMate** as an alternative architecture ontology for enterprise use.
+3. **Reuse ELK** if our A\* + Sugiyama starts struggling at larger scales.
+4. **Event Storming / DDD Context Map** as new ontologies.
 
 **Probably not — low value for our scope:**
 
