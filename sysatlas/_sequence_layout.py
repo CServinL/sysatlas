@@ -50,8 +50,17 @@ def compute_sequence_layout(diagram):
     for f in diagram.frames:
         y0 = msg_y.get(f.start_order, base_y) - FRAME_PAD_Y - FRAME_HEADER_H
         y1 = msg_y.get(f.end_order, last_y) + FRAME_PAD_Y
-        x0 = min(actor_x.values()) - FRAME_PAD_X
-        x1 = max(actor_x.values()) + ACTOR_W + FRAME_PAD_X
+        actors_in_range = {
+            m.source for m in diagram.messages if f.start_order <= m.order <= f.end_order
+        } | {
+            m.target for m in diagram.messages if f.start_order <= m.order <= f.end_order
+        }
+        actors_in_range &= set(actor_x)
+        if not actors_in_range:
+            actors_in_range = set(actor_x)
+        xs = [actor_x[a] for a in actors_in_range]
+        x0 = min(xs) - FRAME_PAD_X
+        x1 = max(xs) + ACTOR_W + FRAME_PAD_X
         frame_rects.append({
             "kind": f.kind, "label": f.label,
             "x": x0, "y": y0,

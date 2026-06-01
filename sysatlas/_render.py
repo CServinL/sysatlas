@@ -150,8 +150,10 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
         else:
             rx, ry = x, y
 
-        h = node_heights.get(name, _NODE_H)
+        h = data.get("height") or node_heights.get(name, _NODE_H)
+        w = data.get("width") or _NODE_W
         is_stub = data.get("is_stub", False)
+        custom_style = data.get("style")
         if is_stub:
             defined_in = data.get("defined_in")
             stub_label = label
@@ -161,6 +163,11 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
                                  id=str(cell_id), value=stub_label,
                                  style=_STUB_STYLE,
                                  vertex="1", parent=parent)
+        elif custom_style:
+            cell = ET.SubElement(root, "mxCell",
+                                 id=str(cell_id), value=label,
+                                 style=custom_style,
+                                 vertex="1", parent=parent)
         else:
             cell = ET.SubElement(root, "mxCell",
                                  id=str(cell_id), value=label,
@@ -168,7 +175,7 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
                                  vertex="1", parent=parent)
         ET.SubElement(cell, "mxGeometry",
                       x=str(rx), y=str(ry),
-                      width=str(_NODE_W), height=str(h),
+                      width=str(w), height=str(h),
                       **{"as": "geometry"})
         node_cell_ids[name] = str(cell_id)
         cell_id += 1
@@ -270,8 +277,12 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
         ey     = round(route.get("exit_y",  1.0), 4)
         en     = round(route.get("entry_x", 0.5), 4)
         ny     = round(route.get("entry_y", 0.0), 4)
-        tpl    = _EDGE_DASHED if edge.get("style") == "dashed" else _EDGE_BASE
-        style  = tpl.format(color=color, ex=ex, ey=ey, en=en, ny=ny)
+        style_full = edge.get("style_full")
+        if style_full:
+            style = style_full.format(color=color, ex=ex, ey=ey, en=en, ny=ny)
+        else:
+            tpl = _EDGE_DASHED if edge.get("style") == "dashed" else _EDGE_BASE
+            style = tpl.format(color=color, ex=ex, ey=ey, en=en, ny=ny)
         cell   = ET.SubElement(root, "mxCell",
                                id=str(cell_id),
                                value=edge.get("label", ""),
@@ -444,6 +455,29 @@ def _viewer_tag(viewer: str) -> str:
     return f'<script src="{VIEWER_CDN}"></script>'
 
 
+_FIT_JS = """
+function fitGraph(viewer, container) {
+  if (!viewer || !viewer.graph) return;
+  var graph = viewer.graph;
+  graph.view.setScale(1);
+  graph.view.setTranslate(0, 0);
+  var bounds = graph.getGraphBounds();
+  if (!bounds || bounds.width <= 0 || bounds.height <= 0) return;
+  var pad = 30;
+  var availW = container.clientWidth - pad * 2;
+  var availH = container.clientHeight - pad * 2;
+  var scale = Math.min(availW / bounds.width, availH / bounds.height);
+  if (scale > 4) scale = 4;
+  if (scale < 0.1) scale = 0.1;
+  graph.view.setScale(scale);
+  var b2 = graph.getGraphBounds();
+  var tx = (container.clientWidth - b2.width) / 2 - b2.x;
+  var ty = (container.clientHeight - b2.height) / 2 - b2.y;
+  graph.view.setTranslate(tx / scale, ty / scale);
+}
+"""
+
+
 def render(nodes, edges, groups, layer_order, strategy, title, debug: bool = False, viewer: str = "cdn") -> str:
     xml = build_xml(nodes, edges, groups, layer_order, debug=debug, strategy=strategy)
     xml_json = json.dumps(xml)
@@ -478,15 +512,14 @@ if (typeof GraphViewer === 'undefined' || typeof mxUtils === 'undefined') {{
 }} else {{
   var xmlDoc = mxUtils.parseXml(xmlStr);
   var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
-  setTimeout(function() {{
-    if (viewer && viewer.graph) viewer.graph.fit();
-  }}, 50);
+  setTimeout(function() {{ fitGraph(viewer, container); }}, 50);
   window.addEventListener('resize', function() {{
     setSize();
-    if (viewer && viewer.graph) viewer.graph.fit();
+    fitGraph(viewer, container);
   }});
 }}
 """
+    script = _FIT_JS + script
     return _html_shell(title, body, _viewer_tag(viewer), script, css)
 
 

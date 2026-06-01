@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import xml.etree.ElementTree as ET
 
-from sysatlas._render import _VIEWER_CONFIG, _html_shell, _viewer_tag
+from sysatlas._render import _FIT_JS, _VIEWER_CONFIG, _html_shell, _viewer_tag
 from sysatlas._sequence_layout import (
     ACTOR_H, ACTOR_W, FRAME_HEADER_H, compute_sequence_layout,
 )
@@ -59,21 +59,16 @@ def build_sequence_xml(diagram) -> str:
 
     cell_id = 2
 
+    frame_borders: list[tuple[dict, str]] = []
     for fr in frame_rects:
         label = f"{fr['kind']}" + (f" [{fr['label']}]" if fr["label"] else "")
-        c = ET.SubElement(root, "mxCell", id=str(cell_id), value=label,
+        c = ET.SubElement(root, "mxCell", id=str(cell_id), value="",
                           style=_FRAME_STYLE, vertex="1", parent="1")
         ET.SubElement(c, "mxGeometry", x=str(fr["x"]), y=str(fr["y"]),
                       width=str(fr["w"]), height=str(fr["h"]),
                       **{"as": "geometry"})
         cell_id += 1
-        hdr = ET.SubElement(root, "mxCell", id=str(cell_id), value="",
-                            style="rounded=0;fillColor=#e0e7ff;strokeColor=#6366f1;",
-                            vertex="1", parent="1")
-        ET.SubElement(hdr, "mxGeometry", x=str(fr["x"]), y=str(fr["y"]),
-                      width=str(max(60, 8 * len(label) + 16)), height=str(FRAME_HEADER_H),
-                      **{"as": "geometry"})
-        cell_id += 1
+        frame_borders.append((fr, label))
 
     actor_top_id: dict[str, str] = {}
     actor_bottom_id: dict[str, str] = {}
@@ -127,6 +122,21 @@ def build_sequence_xml(diagram) -> str:
         ET.SubElement(geo, "mxPoint", x=str(tx), y=str(y), **{"as": "targetPoint"})
         cell_id += 1
 
+    for fr, label in frame_borders:
+        hdr_w = max(80, 7 * len(label) + 20)
+        hdr_x = fr["x"] + 6
+        hdr_y = fr["y"] - FRAME_HEADER_H // 2
+        hdr = ET.SubElement(root, "mxCell", id=str(cell_id), value=label,
+                            style=("rounded=0;whiteSpace=wrap;html=1;"
+                                   "fillColor=#e0e7ff;strokeColor=#6366f1;"
+                                   "fontSize=10;fontStyle=1;align=center;"
+                                   "verticalAlign=middle;"),
+                            vertex="1", parent="1")
+        ET.SubElement(hdr, "mxGeometry", x=str(hdr_x), y=str(hdr_y),
+                      width=str(hdr_w), height=str(FRAME_HEADER_H),
+                      **{"as": "geometry"})
+        cell_id += 1
+
     return ET.tostring(root_el, encoding="unicode", xml_declaration=False)
 
 
@@ -146,6 +156,7 @@ def render_sequence(diagram, title: str = "", viewer: str = "cdn") -> str:
 """
     body = '<div id="diagram"></div>'
     script = f"""
+{_FIT_JS}
 var xmlStr = {xml_json};
 var config = {config_json};
 var container = document.getElementById('diagram');
@@ -160,10 +171,10 @@ if (typeof GraphViewer === 'undefined') {{
 }} else {{
   var xmlDoc = mxUtils.parseXml(xmlStr);
   var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
-  setTimeout(function() {{ if (viewer && viewer.graph) viewer.graph.fit(); }}, 50);
+  setTimeout(function() {{ fitGraph(viewer, container); }}, 50);
   window.addEventListener('resize', function() {{
     setSize();
-    if (viewer && viewer.graph) viewer.graph.fit();
+    fitGraph(viewer, container);
   }});
 }}
 """

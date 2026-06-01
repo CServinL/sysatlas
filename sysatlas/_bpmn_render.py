@@ -5,7 +5,7 @@ import json
 import xml.etree.ElementTree as ET
 
 from sysatlas._bpmn_layout import compute_bpmn_layout
-from sysatlas._render import _VIEWER_CONFIG, _html_shell, _viewer_tag
+from sysatlas._render import _FIT_JS, _VIEWER_CONFIG, _html_shell, _viewer_tag
 
 _POOL_STYLE = (
     "shape=swimlane;startSize=30;horizontal=0;fillColor=#f8fafc;"
@@ -129,6 +129,7 @@ def render_bpmn(diagram, title: str = "", viewer: str = "cdn") -> str:
 """
     body = '<div id="diagram"></div>'
     script = f"""
+{_FIT_JS}
 var xmlStr = {xml_json};
 var config = {config_json};
 var container = document.getElementById('diagram');
@@ -143,10 +144,10 @@ if (typeof GraphViewer === 'undefined') {{
 }} else {{
   var xmlDoc = mxUtils.parseXml(xmlStr);
   var viewer = new GraphViewer(container, xmlDoc.documentElement, config);
-  setTimeout(function() {{ if (viewer && viewer.graph) viewer.graph.fit(); }}, 50);
+  setTimeout(function() {{ fitGraph(viewer, container); }}, 50);
   window.addEventListener('resize', function() {{
     setSize();
-    if (viewer && viewer.graph) viewer.graph.fit();
+    fitGraph(viewer, container);
   }});
 }}
 """
