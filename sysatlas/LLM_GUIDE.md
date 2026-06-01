@@ -52,6 +52,11 @@ import sysatlas
 sysatlas.SystemMap      # one architecture diagram
 sysatlas.System         # multi-view Architecture Description (ISO 42010)
 sysatlas.TreeMap        # tree / org-chart / mindmap
+sysatlas.SequenceMap    # UML sequence diagram
+sysatlas.ERMap          # Entity-Relationship diagram
+sysatlas.StateMap       # state machine / state chart
+sysatlas.ClassMap       # UML class diagram
+sysatlas.BPMNMap        # BPMN process diagram
 sysatlas.reflect(path)  # reverse flow: code → Reflection → SystemMap
 sysatlas.llm_guide()    # returns this file as a string
 ```
@@ -60,6 +65,11 @@ Do **not** import from `sysatlas._*` (private modules — `_ontology`,
 `_layout`, `_route`, etc.). The Pydantic schemas under
 `sysatlas._ontology` are the source of truth for field names, but you
 should reach them only through the builder methods.
+
+Each `*Map` is fluent and follows the same shape: chainable methods,
+`.diagram` for the validated Pydantic instance, `.show()` / `.save()`
+to render. For the per-kind method names check the matching ontology
+file under `sysatlas/_ontology/`.
 
 ## Forward flow — minimal example
 
@@ -121,7 +131,9 @@ by adding `importlib` calls.
 - Use the public symbols above; do not import from `sysatlas._*`.
 - Use Pydantic; never `@dataclass`.
 - Field names must match the ontology exactly. If unsure, check the
-  Pydantic class in `sysatlas/_ontology/architecture.py` (read-only).
+  matching Pydantic class under `sysatlas/_ontology/` (read-only):
+  `architecture.py`, `sequence.py`, `er.py`, `state_machine.py`,
+  `uml_class.py`, `bpmn.py`, `tree.py`.
 - One view = 5–10 components. If a diagram is bigger, split it across
   views with `System`, do not fight the layout engine.
 - After any structural code change, regenerate the affected reflection

@@ -34,25 +34,27 @@ demand.
 
 ## Next up
 
-All four follow-ups from the AD round shipped:
+Active queue is empty — the AD round, polish round, and the
+complete-ontology round all shipped. Pick from *Advanced backlog* or
+*Explicitly deferred* next.
 
-- **AD builder** (`sysatlas.System`) ✓
-- **Quality badges** on nodes ✓ (filtered to criticality ≥ high)
-- **Cross-view stubs** ✓ (auto-detected on `System.save()`)
-- **Trace links rendered** ✓ (dashed purple connectors within a view)
+### Done since last review
 
-All four follow-ups from the polish round shipped:
-
-- **Tree diagram end-to-end** ✓ — `sysatlas.TreeMap`, Reingold-Tilford
-  top-down layout, draw.io render. Validates that the
-  ontology + builder + render pattern replicates beyond C4.
-- **Traces as post-layout overlay** ✓ — overlays no longer enter the
-  Sugiyama Connection list; they are rendered as straight dashed edges
-  between known node positions after layout is fixed.
-- **Quality badges on edges** ✓ — `Connection.qualities` now render as
-  ISO 25010 badges adjacent to the edge label.
-- **Trace matrix view-kind** ✓ — `System.save_trace_matrix(path)` emits
-  an HTML matrix of sources × targets with coloured kind tags + legend.
+- **All five remaining ontologies shipped end-to-end** ✓ —
+  `SequenceMap`, `ERMap`, `StateMap`, `ClassMap`, `BPMNMap`.
+  `state_machine` / `er` / `uml_class` route through the C4 layered
+  engine; `sequence` and `bpmn` keep custom layouts that fit their
+  semantics. See `docs/demos/{sequence,er,state_machine,uml_class,bpmn}.{py,html,png}`.
+- **ModelKind taxonomy** ✓ — `sysatlas/_ontology/model_kind.py` +
+  `model_kinds.py` (`DEFAULT_KINDS` registry). Adds a taxonomy layer
+  above the existing Ontologies without renaming anything. See
+  [`ontology/model_kinds.md`](ontology/model_kinds.md).
+- **Per-node height threaded through layout** ✓ — `_assign_coords`
+  now reads each node's `height` override from `nodes_meta` so
+  ER/UML class boxes no longer bleed into the layer below them.
+- **Off-page connectors opt-out** ✓ — `edge.no_connector=True` forces
+  direct routing even on long-span edges. Used by `StateMap` so
+  state-machine diagrams never grow off-page glyphs.
 
 ## Advanced backlog
 
@@ -62,9 +64,10 @@ All four follow-ups from the polish round shipped:
   let users show/hide tiers (`edge`, `services`, `data`, …) per view.
   Coexistence with the swim-lane groups needs design work — groups are
   cells, layers are parent-of-cells.
-- **Builder ergonomics for non-architecture model kinds** — `TreeMap`
-  set the pattern. Repeat for ER, sequence, UML class, state machine,
-  BPMN (order in *Ontology readiness matrix* below).
+- **Evolve in-house layout engines** — add force-directed, orthogonal
+  (TSM/HOLA), and channel-routing variants alongside the existing
+  Sugiyama + A\*. Avoid pulling in ELK/DAGRE per the no-external-dep
+  policy. Rationale: [`state-of-the-art.md`](state-of-the-art.md) §10.
 - **Render-only stub placement** — stubs currently land wherever
   Sugiyama puts a node with no connections (i.e. arbitrary). Could be
   pinned to the edge of the canvas closest to where the trace overlay
@@ -74,8 +77,8 @@ All four follow-ups from the polish round shipped:
 
 ## Ontology readiness matrix
 
-Only `architecture` (C4-container) is end-to-end usable. The other six
-diagram ontologies have schemas but no builder and no render pipeline.
+All diagram ontologies are end-to-end usable (Pydantic schema + fluent
+builder + render pipeline).
 
 | Ontology | Pydantic schema | Fluent builder | HTML render |
 |---|:---:|:---:|:---:|

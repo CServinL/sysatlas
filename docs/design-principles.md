@@ -74,7 +74,9 @@ B shows `X` as a **stub** — a visually distinct node (dashed border,
 faded fill) labelled with `X` and a pointer to view A. This keeps each
 view self-contained while preserving cross-view identity.
 
-This is not yet implemented; see *Roadmap* below.
+Shipped: `System._inject_stubs` auto-detects cross-view references on
+`save()`. See [`demos/multi_view.py`](demos/multi_view.py) for a worked
+example.
 
 ---
 
@@ -124,12 +126,12 @@ These follow from the principles above:
 
 1. **Budget warnings** — `_report_issues` should also report when a
    diagram exceeds the warn threshold for nodes / edges / ports.
-2. **First-class View concept** — an `ArchitectureDescription` container
-   that holds multiple views and tracks shared identity (a `Payments`
-   component referenced from several views resolves to the same entity).
-3. **Stub-node rendering** — when a connection references a component
-   defined in another view, render it as a dashed/faded stub with a
-   cross-reference label.
+   Reflection already emits `warnings.warn` when a reflected SystemMap
+   crosses 15 components; generalise that to the forward flow.
+2. ~~**First-class View concept**~~ — **Shipped** as `sysatlas.System` +
+   `ArchitectureDescription`.
+3. ~~**Stub-node rendering**~~ — **Shipped** via `System._inject_stubs`
+   (cross-view references auto-render as dashed/faded boxes).
 4. **Suggested split** — when a view is too dense, the tool suggests a
    split line (by group, layer, or detected cluster) and can produce
    the split views automatically.
