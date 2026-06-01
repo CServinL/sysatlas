@@ -61,8 +61,8 @@ into multiple views.
 | **Orthogonal (TSM)** | Topology-Shape-Metrics, Tamassia. Rubber-band style. On the routing roadmap. |
 | **Tree layouts** | Reingold-Tilford (top-down), radial (mind maps). |
 | **HOLA** | Human-Like Orthogonal Layout, Wybrow et al. Aesthetic optimization. |
-| **ELK** (Eclipse Layout Kernel) | State-of-the-art Java toolkit; full suite (layered, force, orthogonal, radial). Consider porting/reusing. |
-| **DAGRE** | JS Sugiyama. Simple, widely used. |
+| **ELK** (Eclipse Layout Kernel) | State-of-the-art Java toolkit; full suite (layered, force, orthogonal, radial). **Reference only** — adopting it would break sysatlas's no-external-dep guarantee. |
+| **DAGRE** | JS Sugiyama. Simple, widely used. Same dep-policy constraint as ELK. |
 
 ## 5. Quality Attributes
 
@@ -135,7 +135,7 @@ What ISO 42010 / the wider literature suggests we should add eventually:
 **Consider after that — medium cost, real value:**
 
 2. **ArchiMate** as an alternative architecture ontology for enterprise use.
-3. **Reuse ELK** if our A\* + Sugiyama starts struggling at larger scales.
+3. **Evolve the in-house layout engines** before adopting external ones — add force-directed, orthogonal (TSM/HOLA), and channel-routing variants alongside the existing Sugiyama + A\*. Adopting ELK/DAGRE/etc. would pull in Java or JS runtime deps and break the no-external-dep policy that ships the draw.io viewer bundled; we'd rather invest in our own.
 4. **Event Storming / DDD Context Map** as new ontologies.
 
 **Probably not — low value for our scope:**
