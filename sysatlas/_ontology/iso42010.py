@@ -14,6 +14,9 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from sysatlas._ontology.model_kind import ModelKind
+from sysatlas._ontology.model_kinds import DEFAULT_KINDS
+
 
 class Stakeholder(BaseModel):
     """Someone with an interest in (a concern about) the system.
@@ -81,6 +84,10 @@ class ArchitectureDescription(BaseModel):
     description: str | None = None
     stakeholders: dict[str, Stakeholder] = Field(default_factory=dict)
     concerns: dict[str, Concern] = Field(default_factory=dict)
+    model_kinds: dict[str, ModelKind] = Field(default_factory=dict)
+    """Taxonomy: which kinds of models this description contains. Names
+    referenced here can be looked up in `model_kinds` (project-local) or
+    in `sysatlas._ontology.model_kinds.DEFAULT_KINDS` (bundled registry)."""
     viewpoints: dict[str, Viewpoint] = Field(default_factory=dict)
     views: dict[str, View] = Field(default_factory=dict)
     models: dict[str, Any] = Field(default_factory=dict)
@@ -97,12 +104,25 @@ class ArchitectureDescription(BaseModel):
                     raise ValueError(
                         f"concern {c.name!r} references unknown stakeholder {s!r}"
                     )
-        # viewpoint → concern refs
+        # viewpoint → concern + model-kind refs. A Viewpoint's model_kinds
+        # entry resolves against (in order): the AD's local registry, the
+        # bundled DEFAULT_KINDS, or — as a backwards-compat fallback — the
+        # raw ontology name referenced by any registered kind. The fallback
+        # lets pre-taxonomy code that wrote `model_kinds=["architecture"]`
+        # continue to validate.
+        known_kinds = set(self.model_kinds) | set(DEFAULT_KINDS)
+        known_ontologies = {k.ontology for k in self.model_kinds.values()} \
+                         | {k.ontology for k in DEFAULT_KINDS.values()}
         for v in self.viewpoints.values():
             for c in v.concerns:
                 if c not in self.concerns:
                     raise ValueError(
                         f"viewpoint {v.name!r} references unknown concern {c!r}"
+                    )
+            for mk in v.model_kinds:
+                if mk not in known_kinds and mk not in known_ontologies:
+                    raise ValueError(
+                        f"viewpoint {v.name!r} references unknown model_kind {mk!r}"
                     )
         # view → viewpoint + model refs
         for view in self.views.values():

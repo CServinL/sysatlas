@@ -88,6 +88,7 @@ integration + render behaviour).
 | ISO/IEC/IEEE 42010 meta (Stakeholder, Concern, Viewpoint, View, AD) | `sysatlas/_ontology/iso42010.py` | [`ontology/iso42010.md`](ontology/iso42010.md) |
 | Trace links across model kinds (SysML vocabulary) | `sysatlas/_ontology/trace.py` | [`ontology/trace.md`](ontology/trace.md) |
 | Quality attributes (ISO 25010) on components & connections | `sysatlas/_ontology/qualities.py` | [`ontology/qualities.md`](ontology/qualities.md) |
+| Model Kinds (taxonomy: named usages of an ontology, e.g. c4-container) | `sysatlas/_ontology/model_kind.py` + `model_kinds.py` | [`ontology/model_kinds.md`](ontology/model_kinds.md) |
 
 ---
 

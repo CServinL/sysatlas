@@ -30,6 +30,7 @@ diagram type themselves.
 | ISO/IEC/IEEE 42010 meta-ontology (Stakeholder, Concern, Viewpoint, View, ArchitectureDescription) | `_ontology/iso42010.py` | [iso42010.md](iso42010.md) |
 | Trace links between entities across models | `_ontology/trace.py` | [trace.md](trace.md) |
 | Quality attributes (ISO 25010) on components & connections | `_ontology/qualities.py` | [qualities.md](qualities.md) |
+| Model Kinds — taxonomy naming each registered usage of an ontology | `_ontology/model_kind.py` + `_ontology/model_kinds.py` | [model_kinds.md](model_kinds.md) |
 
 ## Intentionally omitted
 
