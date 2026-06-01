@@ -165,7 +165,7 @@ function setSize() {{
   container.style.height = Math.round(window.innerHeight * 0.85) + 'px';
 }}
 setSize();
-if (typeof GraphViewer === 'undefined') {{
+if (typeof GraphViewer === 'undefined' || typeof mxUtils === 'undefined') {{
   container.innerHTML = '<div style="padding:32px;font-family:sans-serif;color:#7f1d1d;">' +
     '<strong>draw.io viewer not loaded.</strong></div>';
 }} else {{

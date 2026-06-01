@@ -31,7 +31,7 @@ def node_size(kind: str) -> tuple[int, int]:
 
 
 def compute_bpmn_layout(diagram):
-    """Return (positions, sizes, pool_rects, lane_rects, routes)."""
+    """Return (positions, sizes, pool_rects, lane_rects, routes, all_nodes)."""
     pools = list(diagram.pools.values())
     lanes_by_pool: dict[str, list] = defaultdict(list)
     for lane in diagram.lanes.values():

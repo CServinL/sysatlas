@@ -102,8 +102,9 @@ class ClassMap:
         return self
 
     def _to_architecture(self):
-        classes = self._classes
-        relations = self._relations
+        diagram = self.diagram
+        classes = diagram.classes
+        relations = diagram.relations
 
         parents: dict[str, list[str]] = defaultdict(list)
         for r in relations:

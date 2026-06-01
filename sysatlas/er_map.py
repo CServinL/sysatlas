@@ -79,8 +79,9 @@ class ERMap:
         return self
 
     def _to_architecture(self):
-        entities = self._entities
-        rels = self._relationships
+        diagram = self.diagram
+        entities = diagram.entities
+        rels = diagram.relationships
 
         adj: dict[str, list[str]] = defaultdict(list)
         for r in rels:

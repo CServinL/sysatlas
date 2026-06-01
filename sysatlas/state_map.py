@@ -77,8 +77,9 @@ class StateMap:
         return self
 
     def _to_architecture(self):
-        states = self._states
-        transitions = self._transitions
+        diagram = self.diagram
+        states = diagram.states
+        transitions = diagram.transitions
 
         adj: dict[str, list[str]] = defaultdict(list)
         for t in transitions:
@@ -100,9 +101,10 @@ class StateMap:
         for n in states:
             if n not in rank:
                 rank[n] = next_rank
+        terminal_rank = max(rank.values(), default=0) + 1
         for n, s in states.items():
             if s.kind == "final":
-                rank[n] = max(rank.values()) + 1
+                rank[n] = terminal_rank
 
         max_rank = max(rank.values(), default=0)
         layer_order = [f"r{i}" for i in range(max_rank + 1)]
