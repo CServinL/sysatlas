@@ -63,10 +63,10 @@ The underlying validated Pydantic instance is reachable via
 
 ## Diagram ontologies (Model Kinds)
 
-Seven typed diagram kinds. Today only **architecture** and **tree**
-are end-to-end (builder + render); the others ship schemas and
-validation only, waiting on builder + render to be plugged in (order
-in [`todo.md`](todo.md) §Ontology readiness).
+Seven typed diagram kinds, **all end-to-end** (Pydantic schema +
+fluent builder + render pipeline). The [`ontology/model_kinds.md`](ontology/model_kinds.md)
+registry names each kind (`c4-container`, `uml-sequence`, …); the
+underlying Ontology is the typed schema each kind builds on.
 
 | Ontology | Schema | Doc | Status |
 |---|---|---|---|
@@ -88,6 +88,7 @@ integration + render behaviour).
 | ISO/IEC/IEEE 42010 meta (Stakeholder, Concern, Viewpoint, View, AD) | `sysatlas/_ontology/iso42010.py` | [`ontology/iso42010.md`](ontology/iso42010.md) |
 | Trace links across model kinds (SysML vocabulary) | `sysatlas/_ontology/trace.py` | [`ontology/trace.md`](ontology/trace.md) |
 | Quality attributes (ISO 25010) on components & connections | `sysatlas/_ontology/qualities.py` | [`ontology/qualities.md`](ontology/qualities.md) |
+| Model Kinds (taxonomy: named usages of an ontology, e.g. c4-container) | `sysatlas/_ontology/model_kind.py` + `model_kinds.py` | [`ontology/model_kinds.md`](ontology/model_kinds.md) |
 
 ---
 
@@ -134,10 +135,17 @@ implemented and documented.
 
 ```
 sysatlas/
-├── __init__.py                 — public exports: SystemMap, System, TreeMap
+├── __init__.py                 — public exports: SystemMap, System, TreeMap,
+│                                  SequenceMap, ERMap, StateMap, ClassMap, BPMNMap,
+│                                  Reflection, reflect, llm_guide, llm_guide_path
 ├── system_map.py               — SystemMap builder (single architecture)
 ├── system.py                   — System builder (multi-view AD + traces)
 ├── tree_map.py                 — TreeMap builder
+├── sequence_map.py             — SequenceMap builder (UML sequence)
+├── er_map.py                   — ERMap builder (Entity-Relationship)
+├── state_map.py                — StateMap builder (state machine)
+├── class_map.py                — ClassMap builder (UML class)
+├── bpmn_map.py                 — BPMNMap builder (BPMN process)
 ├── _layout.py                  — Sugiyama; calls into _place, _route; issue detector
 ├── _place.py                   — barycenter refinement, swap-and-reroute, narrow-layer spread
 ├── _route.py                   — A* routing, port assignment, label placement
@@ -154,6 +162,10 @@ sysatlas/
 │   └── reflection.py           — Reflection class; to_system_map / to_system / merge_with
 ├── _tree_layout.py             — Reingold-Tilford for TreeMap
 ├── _tree_render.py             — tree-specific draw.io emission
+├── _sequence_layout.py         — vertical-lifeline placement for SequenceMap
+├── _sequence_render.py         — sequence-specific draw.io emission
+├── _bpmn_layout.py             — pool/lane swimlane + BFS-row placement for BPMNMap
+├── _bpmn_render.py             — BPMN-specific draw.io emission
 ├── _trace_matrix.py            — HTML matrix view-kind for trace links
 ├── _vendor.py                  — draw.io viewer JS download / bundle
 └── _ontology/
@@ -162,6 +174,8 @@ sysatlas/
     ├── bpmn.py                 — Pool, Lane, Event, Activity, Gateway, Flow, BPMNDiagram
     ├── er.py                   — Entity, Attribute, Relationship, ERDiagram
     ├── iso42010.py             — Stakeholder, Concern, Viewpoint, View, ArchitectureDescription
+    ├── model_kind.py           — ModelKind (taxonomy entry naming a usage of an ontology)
+    ├── model_kinds.py          — DEFAULT_KINDS bundled registry (c4-container, uml-sequence, …)
     ├── qualities.py            — QualityAttribute (ISO 25010)
     ├── sequence.py             — Actor, Message, Activation, Frame, SequenceDiagram
     ├── state_machine.py        — State, Transition, StateDiagram
@@ -190,7 +204,8 @@ docs/
 │   ├── tree.md
 │   ├── iso42010.md
 │   ├── trace.md
-│   └── qualities.md
+│   ├── qualities.md
+│   └── model_kinds.md          — taxonomy: named usages of an ontology
 ├── demos/                      — runnable feature showcases + previews
 │   ├── README.md               — embeds PNG + links to .py + .html per demo
 │   ├── architecture.py / .html / .png
@@ -199,6 +214,10 @@ docs/
 │   ├── qualities.py / .html / .png
 │   ├── trace_matrix.py / .html / .png  (+ trace_matrix_table)
 │   ├── sequence.py / .html / .png — UML sequence diagram
+│   ├── er.py / .html / .png       — Entity-Relationship diagram
+│   ├── state_machine.py / .html / .png — state chart
+│   ├── uml_class.py / .html / .png — UML class diagram
+│   ├── bpmn.py / .html / .png      — BPMN process diagram
 │   ├── hub.py / .html / .png   — hub-and-spoke strategy
 │   ├── html/                   — committed CDN renders (~10–25 KB each)
 │   └── img/                    — committed PNG previews
@@ -218,10 +237,9 @@ its `.py` so committed renders stay in sync with the current renderer.
 ## Roadmap pointers
 
 - **Active backlog**: [`todo.md`](todo.md) §Next up
-- **Advanced experiments**: [`todo.md`](todo.md) §Advanced backlog (clickable layer toggle, builder ergonomics for remaining ontologies, smarter stub placement)
+- **Advanced experiments**: [`todo.md`](todo.md) §Advanced backlog (clickable layer toggle, smarter stub placement, evolve in-house layout engines per [`state-of-the-art.md`](state-of-the-art.md) §10)
 - **Deferred** (waiting on real demand): [`todo.md`](todo.md) §Explicitly deferred (Mermaid/PlantUML export, versioning, requirements linking, pattern templates)
-- **Ontology readiness matrix**: [`todo.md`](todo.md) §Ontology readiness matrix (which kinds are end-to-end vs schema-only)
-- **Recommended extension order**: sequence → ER → state_machine → uml_class → bpmn (rationale in `todo.md`)
+- **Ontology readiness matrix**: [`todo.md`](todo.md) §Ontology readiness matrix — all kinds shipped end-to-end
 
 ---
 

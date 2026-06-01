@@ -12,13 +12,13 @@ ontology has:
 
 | Type | Schema | Doc | Builder |
 |---|---|---|---|
-| Layered architecture (C4-container style) | `_ontology/architecture.py` | [architecture.md](architecture.md) | `sysatlas.SystemMap` |
-| Entity–Relationship (ER) | `_ontology/er.py` | [er.md](er.md) | — |
-| Sequence (UML) | `_ontology/sequence.py` | [sequence.md](sequence.md) | — |
-| Class (UML) | `_ontology/uml_class.py` | [uml_class.md](uml_class.md) | — |
-| State machine | `_ontology/state_machine.py` | [state_machine.md](state_machine.md) | — |
-| BPMN process (simplified) | `_ontology/bpmn.py` | [bpmn.md](bpmn.md) | — |
-| Tree (org / mindmap / taxonomy / filesystem) | `_ontology/tree.py` | [tree.md](tree.md) | — |
+| Layered architecture (C4-container style) | `_ontology/architecture.py` | [architecture.md](architecture.md) | `sysatlas.SystemMap` / `sysatlas.System` |
+| Entity–Relationship (ER) | `_ontology/er.py` | [er.md](er.md) | `sysatlas.ERMap` |
+| Sequence (UML) | `_ontology/sequence.py` | [sequence.md](sequence.md) | `sysatlas.SequenceMap` |
+| Class (UML) | `_ontology/uml_class.py` | [uml_class.md](uml_class.md) | `sysatlas.ClassMap` |
+| State machine | `_ontology/state_machine.py` | [state_machine.md](state_machine.md) | `sysatlas.StateMap` |
+| BPMN process (simplified) | `_ontology/bpmn.py` | [bpmn.md](bpmn.md) | `sysatlas.BPMNMap` |
+| Tree (org / mindmap / taxonomy / filesystem) | `_ontology/tree.py` | [tree.md](tree.md) | `sysatlas.TreeMap` |
 
 ## Cross-cutting ontologies
 
@@ -30,6 +30,7 @@ diagram type themselves.
 | ISO/IEC/IEEE 42010 meta-ontology (Stakeholder, Concern, Viewpoint, View, ArchitectureDescription) | `_ontology/iso42010.py` | [iso42010.md](iso42010.md) |
 | Trace links between entities across models | `_ontology/trace.py` | [trace.md](trace.md) |
 | Quality attributes (ISO 25010) on components & connections | `_ontology/qualities.py` | [qualities.md](qualities.md) |
+| Model Kinds — taxonomy naming each registered usage of an ontology | `_ontology/model_kind.py` + `_ontology/model_kinds.py` | [model_kinds.md](model_kinds.md) |
 
 ## Intentionally omitted
 

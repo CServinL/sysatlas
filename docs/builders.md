@@ -1,19 +1,31 @@
 # Builders
 
-sysatlas exposes three public builder classes. They share a fluent style
-(method chaining, declarative construction) and produce validated
-Pydantic models under the hood.
+sysatlas exposes eight public builder classes. They share a fluent
+style (method chaining, declarative construction) and produce
+validated Pydantic models under the hood.
 
 ## At a glance
 
-| Builder | Use it for | Output |
-|---|---|---|
-| `SystemMap` | A single architecture diagram (one canvas). Most common entry point. | One HTML view. |
-| `System` | A multi-view Architecture Description (ISO 42010). Multiple diagrams + stakeholders / concerns / viewpoints + trace links between models. | Multi-tab HTML, plus optional trace-matrix HTML. |
-| `TreeMap` | Any tree-shaped diagram: org chart, mind map, taxonomy, file tree. | One HTML view. |
+| Builder | Use it for | Output | Detail |
+|---|---|---|---|
+| `SystemMap` | A single architecture diagram (one canvas). Most common entry point. | One HTML view. | §SystemMap below |
+| `System` | A multi-view Architecture Description (ISO 42010). Multiple diagrams + stakeholders / concerns / viewpoints + trace links between models. | Multi-tab HTML, plus optional trace-matrix HTML. | §System below |
+| `TreeMap` | Any tree-shaped diagram: org chart, mind map, taxonomy, file tree. | One HTML view. | §TreeMap below |
+| `SequenceMap` | UML sequence diagram: lifelines + ordered messages + activations + combined fragments. | One HTML view. | [`ontology/sequence.md`](ontology/sequence.md) §Builder |
+| `ERMap` | Entity-Relationship diagram: entities with attribute rows + cardinality-labelled relationships. | One HTML view. | [`ontology/er.md`](ontology/er.md) §Builder |
+| `StateMap` | State machine: states (incl. initial/final/composite) + transitions with event/guard/action. | One HTML view. | [`ontology/state_machine.md`](ontology/state_machine.md) §Builder |
+| `ClassMap` | UML class diagram: classes with attrs/methods + six relation kinds (inheritance, association, …). | One HTML view. | [`ontology/uml_class.md`](ontology/uml_class.md) §Builder |
+| `BPMNMap` | BPMN process: pools/lanes + events + activities + gateways + flows. | One HTML view. | [`ontology/bpmn.md`](ontology/bpmn.md) §Builder |
 
 If you're not sure: start with `SystemMap`. Graduate to `System` when
-you want to split one system across several focused diagrams.
+you want to split one system across several focused diagrams. For
+non-architecture diagrams, pick the matching `*Map` per the table.
+
+`SequenceMap`, `ERMap`, `StateMap`, `ClassMap`, and `BPMNMap` follow
+the same shape as the three documented in depth below (fluent
+chaining, `.diagram` exposes the validated Pydantic instance,
+`.show()` / `.save()` accept `viewer=`). Their kind-specific methods
+are documented in the per-ontology pages linked in the table.
 
 ## `SystemMap` — one architecture diagram
 
