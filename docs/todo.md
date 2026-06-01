@@ -75,6 +75,89 @@ complete-ontology round all shipped. Pick from *Advanced backlog* or
 
 ---
 
+## Long-run advanced topics
+
+Forward direction, not active work. Captured here so the ideas don't
+get lost as the close-in roadmap turns over.
+
+### Visual design & effects
+
+The current renderer ships a fixed palette and the draw.io viewer's
+defaults. There is a lot of room to make diagrams look like
+something a senior architect would put on a slide deck without
+post-processing.
+
+- **Themes / dark mode** — configurable palette + stroke/fill rules,
+  applied at the `_render.py` style layer. Today the palette is
+  hardcoded per group; promote it to a `Theme` object the renderer
+  consumes.
+- **Icon packs** — render `tech=` as a recognisable glyph
+  (AWS / GCP / Azure / K8s, generic shapes for DB / queue / cache,
+  etc.) in the node's corner. The icons would ship as separate assets;
+  see *Constraints* below.
+- **Polish: shadows, gradients, glass** — depth cues at the mxGraph
+  style layer. Cheap to add, big visual lift.
+- **Edge motion** — animated direction indicators (small triangles
+  flowing along the edge) on hover, to show data/flow direction
+  without arrowhead clutter.
+- **Hover highlight** — dim non-neighbours when hovering a node, so
+  fan-in/fan-out reads at a glance.
+- **Click-through to source** — for reflected diagrams, components
+  hyperlink to their `path:line` in the repo (a `source=` field on
+  `Component` carried through to the rendered HTML).
+- **High-quality export** — SVG and PDF emitters next to the HTML
+  output, for slide decks and print.
+- **Mini-map** — viewport navigator overlay for large multi-view HTMLs.
+
+### Deep-learning engines
+
+Use ML where heuristics are running out of steam, *without* breaking
+the no-external-dep guarantee for the core library.
+
+- **Learned layout scoring** — train a small GNN to score Sugiyama
+  variants (different barycenter seeds, swap sequences, port-side
+  picks) on aesthetic criteria — crossings, label density,
+  symmetry, edge length. The router still does the work; the model
+  picks the best candidate.
+- **Auto-grouping / auto-layering** — cluster components by name
+  similarity, import-graph topology, and `tech=` to suggest `group=`
+  and `layer=` assignments when the user didn't specify them. Useful
+  on reflected output where layer inference today is a hardcoded
+  regex table.
+- **Auto-labelling** — predict a likely `layer` / `group` / `tech`
+  from a component's neighbours and identifier. Could fold into
+  Reflection's hints application.
+- **Natural-language → diagram** — LLM that translates a prose brief
+  ("a storefront with cart, catalog, payments via Stripe, async
+  notifications via SES") into builder calls.
+- **Diagram → critique** — LLM reads a rendered view (HTML or the
+  underlying SystemMap) and flags clarity issues: dense label region,
+  cluster that should be split, missing trace for an implied
+  dependency.
+- **Code → semantics** — extension of Reflection that detects
+  candidate quality attributes (security-sensitive crypto calls,
+  performance-critical hot loops) and trace links (a class that
+  *realizes* a domain concept named in a sibling module).
+
+### Constraints
+
+The library's no-external-dep guarantee (one wheel, no runtime
+downloads) shapes how these land:
+
+- **Themes, shadows, edge motion, hover highlight, click-through,
+  mini-map, SVG/PDF export** can ship in-tree — they are
+  emission-layer changes, no new deps.
+- **Icon packs** ship as assets; they bloat the wheel. Land them as
+  an opt-in `sysatlas[icons]` extra (separate `sysatlas-icons`
+  package or wheel data_files) so the core install stays small.
+- **ML features** need a runtime (torch / onnxruntime / a hosted API).
+  They belong in a sibling package — `sysatlas-ml`, or per-feature
+  packages like `sysatlas-nl-builder` — so the core library remains
+  zero-dep. Inference results feed back into the existing builders
+  and hints files; the ML layer never replaces them.
+
+---
+
 ## Ontology readiness matrix
 
 All diagram ontologies are end-to-end usable (Pydantic schema + fluent
