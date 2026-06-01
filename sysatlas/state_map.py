@@ -129,10 +129,10 @@ class StateMap:
 
             if s.kind == "initial":
                 node.update({"label": " ", "style": _INITIAL_STYLE,
-                             "width": 28, "height": 28})
+                             "width": 48, "height": 48})
             elif s.kind == "final":
                 node.update({"label": " ", "style": _FINAL_STYLE,
-                             "width": 32, "height": 32})
+                             "width": 52, "height": 52})
             elif s.kind == "choice":
                 node.update({"label": base_label, "style": _CHOICE_STYLE,
                              "width": 60, "height": 60})

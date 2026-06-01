@@ -67,6 +67,12 @@ def compute_layout(
     # compute per-node heights to fit all ports on the tallest side
     direct_edges_dicts = [{"source": s, "target": t} for _, s, t in valid_edges]
     node_heights = compute_node_heights(direct_edges_dicts, pos, default_h=NODE_H)
+    # merge explicit per-node heights from nodes_meta so the router knows
+    # about ER/UML class boxes that grew beyond NODE_H from inlined content.
+    for n, data in nodes.items():
+        h = data.get("height")
+        if h:
+            node_heights[n] = max(node_heights.get(n, NODE_H), h)
 
     # compute group label zones (top 24px of each group's bbox) so the router
     # treats them as hard obstacles — lines never cross group titles.
@@ -655,8 +661,12 @@ def _assign_coords(
         layer_tops[r] = layer_top
 
         band_of, n_bands = _band_index(layer)
-        prev_layer_h = NODE_H + (n_bands - 1) * (NODE_H + _GROUP_CHROME + SUB_GAP)
-        center_y = layer_top + (prev_layer_h - NODE_H) // 2
+        layer_node_h = max(
+            (nodes_meta.get(n, {}).get("height") or NODE_H for n in layer if n in real_nodes),
+            default=NODE_H,
+        )
+        prev_layer_h = layer_node_h + (n_bands - 1) * (layer_node_h + _GROUP_CHROME + SUB_GAP)
+        center_y = layer_top + (prev_layer_h - layer_node_h) // 2
 
         def _y_for(name: str) -> int:
             if name not in real_nodes:
