@@ -1,5 +1,7 @@
 # sysatlas
 
+[![Sponsor](https://img.shields.io/badge/Sponsor-CServinL-ea4aaa?logo=github)](https://github.com/sponsors/CServinL)
+
 **For software architects who keep redrawing the same diagram because it
 got unreadable — and for the AI coding assistants that keep the
 diagrams in sync with the code.**

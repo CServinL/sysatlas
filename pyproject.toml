@@ -27,6 +27,7 @@ dependencies = ["networkx>=3.0", "pydantic>=2.0"]
 Homepage = "https://github.com/CServinL/sysatlas"
 Repository = "https://github.com/CServinL/sysatlas"
 Issues = "https://github.com/CServinL/sysatlas/issues"
+Funding = "https://github.com/sponsors/CServinL"
 
 [tool.hatch.build.targets.wheel]
 packages = ["sysatlas"]
