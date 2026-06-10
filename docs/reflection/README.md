@@ -12,8 +12,8 @@ can produce a usable diagram of its own source, the API works.
 
 | File | What it diagrams | How |
 |---|---|---|
-| [`loops.py`](loops.py) → [`loops.html`](loops.html) · [PNG](img/loops.png) | sysatlas as read/write loops around its ontology. The *conceptual* view: what sysatlas is. | Hand-authored (forward flow), `strategy="hub"`. |
-| [`module-map.py`](module-map.py) → [`module-map.html`](module-map.html) · [PNG](img/module-map.png) | sysatlas's internal module dependency graph. The *literal* view: what its files import. | `sysatlas.reflect()` (backward flow). Hints loaded from `sysatlas/sysatlas.json`. |
+| [`loops.py`](loops.py) → [`loops.html`](loops.html) · [PNG](img/loops.png) | sysatlas as read/write loops around its ontology. Kept as a standalone because it uses the hub strategy, which tells a different story from the module map. | Hand-authored (forward flow), `strategy="hub"`. |
+| [`module-map.py`](module-map.py) → [`module-map.html`](module-map.html) | All views in one HTML: conceptual hub + Python module maps (root, ontology, reflection) + Rust view (placeholder until prisma-desktop grows; live reflection when it has `use crate::` deps). | `sysatlas.reflect()` + `reflect_rust()` + `to_system()` (multi-view). Hints loaded from `sysatlas/sysatlas.json`. |
 
 ### The conceptual view
 

@@ -195,3 +195,14 @@ def reflect(path: str | Path, hints: Hints | None = None) -> Reflection:
         from sysatlas._reflection.hints import load_hints
         hints = load_hints(path)
     return Reflection(scan(path), hints=hints)
+
+
+def reflect_rust(path: str | Path, hints: Hints | None = None) -> Reflection:
+    """Scan a Rust source tree and return a Reflection.
+
+    Uses tree-sitter; never compiles the target code. Requires the
+    `reflect-rust` optional extras: pip install 'sysatlas[reflect-rust]'.
+    `path` can be a crate root (containing src/) or a src/ directory directly.
+    """
+    from sysatlas._reflection.parser_rust import scan_rust
+    return Reflection(scan_rust(path), hints=hints or Hints())

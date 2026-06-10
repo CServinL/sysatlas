@@ -61,8 +61,14 @@ merged = r.merge_with(overlay)
 merged.show()
 ```
 
-`sysatlas.reflect` and the `Reflection` class are the only new public
-symbols.
+`sysatlas.reflect`, `sysatlas.reflect_rust`, and the `Reflection` class are the only public symbols.
+
+```python
+# Rust crate — same Reflection API, same pipeline
+r = sysatlas.reflect_rust("my-crate/")   # needs sysatlas[reflect-rust]
+m = r.to_system_map(title="my-crate internals")
+m.save("docs/reflection/module-map.html")
+```
 
 ## Module layout (proposed)
 
@@ -112,7 +118,7 @@ invoke.
 | 2 | Module-granularity `Reflection.to_system_map()` (`reflection.py`, `layers.py`) | ✅ done | `sysatlas.reflect("sysatlas/").to_system_map().show()` produces a recognisable diagram of sysatlas itself. Bounded-complexity `warnings.warn` when >15 components, pointing at `to_system()`. |
 | 3 | Hints file (JSON-native, YAML if PyYAML installed) | ✅ done | Test fixture + hint overrides exclude tests dir and re-layer one module. `sysatlas/sysatlas.json` doubles as a real-world example. |
 | 4 | Round-trip merge (`merge.py`) | ✅ done | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
-| 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html`; PNG committed; README table updated. |
+| 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html` via `to_system()` (multi-view, no complexity warning); README table updated. |
 | 6 | Class granularity (`granularity="class"`) | ⏸ deferred | Optional follow-up; not in this PR. |
 
 ## Extras landed on the same branch (post-M5)
@@ -152,13 +158,23 @@ the feature in anger:
 - **Demo regen script** — `scripts/regen_demos.py` rebuilds every
   `docs/demos/html/*.html` from its `.py` so committed artefacts stay
   in sync with the renderer.
+- **Rust reflection** (`reflect_rust`) — tree-sitter Rust scanner in
+  `_reflection/parser_rust.py`. Scans `.rs` files, resolves `use crate::`,
+  `use self::`, `use super::`, grouped `{A, B}`, wildcards, and `as`
+  aliases. Produces the same `ProjectGraph` type as the Python scanner;
+  the full `Reflection` pipeline (layers, groups, `to_system_map`,
+  `to_system`, hints, merge) works unchanged. Optional extra:
+  `pip install 'sysatlas[reflect-rust]'` (`tree-sitter>=0.24`,
+  `tree-sitter-rust>=0.24`). 25 tests in
+  `tests/test_reflection_rust_logic.py`.
 
 ## Out of scope (for now)
 
 - Dynamic import detection (plugin systems, `importlib.import_module(...)`).
 - Type-driven connections (call graph, type-hint dependency). Imports
   only.
-- Non-Python sources.
+- Languages beyond Python and Rust (tree-sitter grammars exist for most;
+  adding one follows the `parser_rust.py` pattern).
 - Live "watch & regenerate" mode.
 - Drift detection as a separate command — covered implicitly by
   round-trip merge.

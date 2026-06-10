@@ -34,8 +34,9 @@ The full surface exposed from `import sysatlas`:
 | `sysatlas.StateMap` | Builder — state machine diagram | [`ontology/state_machine.md`](ontology/state_machine.md) §Builder | `sysatlas/state_map.py` |
 | `sysatlas.ClassMap` | Builder — UML class diagram | [`ontology/uml_class.md`](ontology/uml_class.md) §Builder | `sysatlas/class_map.py` |
 | `sysatlas.BPMNMap` | Builder — BPMN process diagram | [`ontology/bpmn.md`](ontology/bpmn.md) §Builder | `sysatlas/bpmn_map.py` |
-| `sysatlas.reflect(path)` | Backward flow — AST-scan code → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
-| `sysatlas.Reflection` | Wrapper returned by `reflect()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
+| `sysatlas.reflect(path)` | Backward flow — Python AST-scan → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
+| `sysatlas.reflect_rust(path)` | Backward flow — Rust tree-sitter scan → `Reflection` (requires `sysatlas[reflect-rust]`) | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/parser_rust.py` |
+| `sysatlas.Reflection` | Wrapper returned by `reflect()` / `reflect_rust()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
 | `sysatlas.llm_guide()` / `.llm_guide_path()` | Bundled LLM usage guide (string / path) | `sysatlas/LLM_GUIDE.md` | `sysatlas/__init__.py` |
 
 Every builder method (`group`, `add_component`, `connect`, `show`,
@@ -137,7 +138,7 @@ implemented and documented.
 sysatlas/
 ├── __init__.py                 — public exports: SystemMap, System, TreeMap,
 │                                  SequenceMap, ERMap, StateMap, ClassMap, BPMNMap,
-│                                  Reflection, reflect, llm_guide, llm_guide_path
+│                                  Reflection, reflect, reflect_rust, llm_guide, llm_guide_path
 ├── system_map.py               — SystemMap builder (single architecture)
 ├── system.py                   — System builder (multi-view AD + traces)
 ├── tree_map.py                 — TreeMap builder
@@ -154,8 +155,9 @@ sysatlas/
 ├── _render.py                  — mxGraph XML emission, HTML shell, badges, stubs, hidden trace + legend layers
 ├── _reflection/
 │   ├── __init__.py
-│   ├── parser.py               — AST walk: modules + imports
-│   ├── resolve.py              — import string → in-tree module
+│   ├── parser.py               — Python AST walk: modules + imports
+│   ├── parser_rust.py          — Rust tree-sitter walk: modules + use deps (optional extra)
+│   ├── resolve.py              — import/use string → in-tree module
 │   ├── layers.py               — heuristic layer/group inference
 │   ├── hints.py                — sysatlas.json / sysatlas.yaml loader
 │   ├── merge.py                — round-trip merge with hand-authored overlay

@@ -10,7 +10,7 @@ If you are an LLM helping a user with this library, call
 
 from pathlib import Path
 
-from sysatlas._reflection.reflection import Reflection, reflect
+from sysatlas._reflection.reflection import Reflection, reflect, reflect_rust
 from sysatlas.bpmn_map import BPMNMap
 from sysatlas.class_map import ClassMap
 from sysatlas.er_map import ERMap
@@ -31,10 +31,11 @@ __all__ = [
     "BPMNMap",
     "Reflection",
     "reflect",
+    "reflect_rust",
     "llm_guide",
     "llm_guide_path",
 ]
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
 

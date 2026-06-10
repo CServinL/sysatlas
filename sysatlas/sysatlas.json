@@ -2,6 +2,8 @@
   "exclude": ["LLM_GUIDE.md", "__init__.py", "*/__init__.py", "sysatlas.json"],
   "layer": {
     "sysatlas._render": "render",
+    "sysatlas._bpmn_render": "render",
+    "sysatlas._sequence_render": "render",
     "sysatlas._tree_render": "render",
     "sysatlas._trace_matrix": "render",
 
@@ -9,6 +11,9 @@
     "sysatlas._place": "layout",
     "sysatlas._route": "layout",
     "sysatlas._connectors": "layout",
+    "sysatlas._hub_layout": "layout",
+    "sysatlas._bpmn_layout": "layout",
+    "sysatlas._sequence_layout": "layout",
     "sysatlas._tree_layout": "layout",
 
     "sysatlas._ontology.architecture": "ontology",
@@ -21,12 +26,20 @@
     "sysatlas._ontology.sequence": "ontology",
     "sysatlas._ontology.state_machine": "ontology",
     "sysatlas._ontology.uml_class": "ontology",
+    "sysatlas._ontology.model_kind": "ontology",
+    "sysatlas._ontology.model_kinds": "ontology",
 
     "sysatlas.system_map": "builders",
     "sysatlas.system": "builders",
     "sysatlas.tree_map": "builders",
+    "sysatlas.bpmn_map": "builders",
+    "sysatlas.er_map": "builders",
+    "sysatlas.class_map": "builders",
+    "sysatlas.sequence_map": "builders",
+    "sysatlas.state_map": "builders",
 
     "sysatlas._reflection.parser": "reflection",
+    "sysatlas._reflection.parser_rust": "reflection",
     "sysatlas._reflection.resolve": "reflection",
     "sysatlas._reflection.layers": "reflection",
     "sysatlas._reflection.reflection": "reflection",
@@ -46,6 +59,15 @@
 
     "sysatlas._ontology.iso42010": "cross-cutting",
     "sysatlas._ontology.trace": "cross-cutting",
-    "sysatlas._ontology.qualities": "cross-cutting"
+    "sysatlas._ontology.qualities": "cross-cutting",
+    "sysatlas._ontology.model_kind": "cross-cutting",
+    "sysatlas._ontology.model_kinds": "cross-cutting",
+
+    "sysatlas._bpmn_layout": "bpmn-pipeline",
+    "sysatlas._bpmn_render": "bpmn-pipeline",
+    "sysatlas._sequence_layout": "sequence-pipeline",
+    "sysatlas._sequence_render": "sequence-pipeline",
+    "sysatlas._tree_layout": "tree-pipeline",
+    "sysatlas._tree_render": "tree-pipeline"
   }
 }

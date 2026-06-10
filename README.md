@@ -38,13 +38,20 @@ structure:
 
 ```python
 import sysatlas
+
+# Python project
 r = sysatlas.reflect("src/")
 m = r.to_system_map(title="src internals")
 m.save("docs/reflection/module-map.html")
+
+# Rust crate  (pip install 'sysatlas[reflect-rust]')
+r = sysatlas.reflect_rust("my-crate/")
+m = r.to_system_map(title="my-crate internals")
+m.save("docs/reflection/module-map.html")
 ```
 
-Static AST analysis — no execution, safe on broken code. The output
-is the same `SystemMap` the forward flow produces, so a thin
+Static analysis — no execution, safe on broken or uncompiled code. The
+output is the same `SystemMap` the forward flow produces, so a thin
 human-authored "annotation overlay" (qualities, traces, viewpoints)
 can be merged onto reflected structure via `r.merge_with(overlay)`.
 Drift between intent and reality becomes visible instead of silent.
@@ -61,7 +68,8 @@ Output is a single self-contained HTML file — no server, no extra
 runtime dependencies, opens in any browser.
 
 ```bash
-pip install sysatlas
+pip install sysatlas                        # Python reflection included
+pip install 'sysatlas[reflect-rust]'        # + Rust crate reflection
 ```
 
 ## Using sysatlas with an AI coding assistant
