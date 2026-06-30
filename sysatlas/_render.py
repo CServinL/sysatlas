@@ -15,12 +15,13 @@ _NODE_STYLE  = "rounded=1;whiteSpace=wrap;html=1;arcSize=8;fillColor={fill};stro
 _STUB_STYLE  = "rounded=1;whiteSpace=wrap;html=1;arcSize=8;dashed=1;fillColor=#f9fafb;strokeColor=#9ca3af;fontFamily=monospace;fontSize=10;fontColor=#6b7280;opacity=85;"
 _GROUP_STYLE = "swimlane;startSize=24;fillColor={fill};strokeColor=#94a3b8;fontStyle=2;fontSize=11;opacity=20;"
 # No edgeStyle — draw.io follows our explicit waypoints exactly.
-_EDGE_BASE   = "rounded=1;exitX={ex};exitY={ey};exitDx=0;exitDy=0;entryX={en};entryY={ny};entryDx=0;entryDy=0;strokeColor={color};strokeWidth=1.5;fontSize=10;"
-_EDGE_DASHED = "rounded=1;dashed=1;exitX={ex};exitY={ey};exitDx=0;exitDy=0;entryX={en};entryY={ny};entryDx=0;entryDy=0;strokeColor={color};strokeWidth=1.5;fontSize=10;"
+_EDGE_BASE   = "rounded=1;exitX={ex};exitY={ey};exitDx=0;exitDy=0;entryX={en};entryY={ny};entryDx=0;entryDy=0;strokeColor={color};strokeWidth=1.5;fontSize=10;whiteSpace=wrap;overflow=hidden;"
+_EDGE_DASHED = "rounded=1;dashed=1;exitX={ex};exitY={ey};exitDx=0;exitDy=0;entryX={en};entryY={ny};entryDx=0;entryDy=0;strokeColor={color};strokeWidth=1.5;fontSize=10;whiteSpace=wrap;overflow=hidden;"
 _CONNECTOR_STYLE = "ellipse;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#92400e;fontFamily=monospace;fontSize=8;fontStyle=1;"
-_CONNECTOR_W = 60
-_CONNECTOR_H = 16
+_CONNECTOR_W = 120
+_CONNECTOR_H = 22
 _CONNECTOR_GAP = 6
+_CONNECTOR_MAX_NAME = 18   # truncate node name in glyph label beyond this
 
 # Quality-attribute badges (ISO 25010). One letter + one color per category.
 _QUALITY_LETTER = {
@@ -227,9 +228,11 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
             tcx = tx + (_NODE_W - _CONNECTOR_W) // 2 + t_off * (_CONNECTOR_W + 4)
             tcy = ty - _CONNECTOR_H - _CONNECTOR_GAP
 
-            label = edge.get("label") or ""
-            src_label = f"&#x2937; {tgt_name}" + (f" [{label}]" if label else "")
-            tgt_label = f"&#x2936; {src_name}" + (f" [{label}]" if label else "")
+            def _short(name: str) -> str:
+                return name if len(name) <= _CONNECTOR_MAX_NAME else name[:_CONNECTOR_MAX_NAME - 1] + "…"
+
+            src_label = f"⤷ {_short(tgt_name)}"
+            tgt_label = f"⤶ {_short(src_name)}"
 
             # short connector line: from source bottom to source-side glyph,
             # and from target-side glyph to target top.
@@ -305,10 +308,14 @@ def build_xml(nodes: dict[str, dict], edges: list[dict], groups: dict[str, dict]
                 lbl = ET.SubElement(root, "mxCell",
                                     id=str(cell_id + 10000),
                                     value=edge.get("label", ""),
-                                    style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=10;",
+                                    style="edgeLabel;html=1;align=center;verticalAlign=middle;"
+                                          "resizable=0;points=[];fontSize=10;"
+                                          "whiteSpace=wrap;overflow=hidden;",
                                     vertex="1", connectable="0", parent=str(cell_id))
                 lbl_geo = ET.SubElement(lbl, "mxGeometry",
-                                        x=str(round(lx, 4)), y="0", relative="1",
+                                        x=str(round(lx, 4)), y="0",
+                                        width="100", height="28",
+                                        relative="1",
                                         **{"as": "geometry"})
                 ET.SubElement(lbl_geo, "mxPoint", x=str(ldx), y=str(ldy), **{"as": "offset"})
                 # remove the value from the parent cell so it's not rendered twice
