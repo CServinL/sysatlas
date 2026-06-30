@@ -35,7 +35,7 @@ __all__ = [
     "llm_guide",
     "llm_guide_path",
 ]
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
 
