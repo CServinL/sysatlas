@@ -56,14 +56,55 @@ complete-ontology round all shipped. Pick from *Advanced backlog* or
   direct routing even on long-span edges. Used by `StateMap` so
   state-machine diagrams never grow off-page glyphs.
 
+## 0.4.0 — draw.io layers as a first-class concept
+
+**Goal**: let diagram authors declare named draw.io layers within a single view,
+each with its own independent routing pass and off-page connectors for
+cross-layer edges.
+
+**API**:
+```python
+sm = SystemMap(title="My system")
+sm.add_dlayer("app",  label="Application")   # declare — order matters
+sm.add_dlayer("data", label="Data stores")
+sm.add_dlayer("ext",  label="External")
+
+sm.add_component("api",    ..., dlayer="app")
+sm.add_component("db",     ..., dlayer="data")
+sm.add_component("github", ..., dlayer="ext")
+
+sm.group("Backend", color=..., dlayer="app")
+sm.connect("api", "db")   # cross-dlayer → off-page connectors
+```
+
+**Implementation plan**:
+1. `_ontology/architecture.py` — add `DLayer` model; add `dlayer: str | None`
+   to `Component` and `Group`; add `dlayers: list[DLayer]` to `ArchitectureDiagram`.
+2. `system_map.py` — add `add_dlayer(name, label=None)` method; thread `dlayer`
+   through `add_component()` and `group()`.
+3. `_render.py` — `build_xml()` changes:
+   - Partition nodes by dlayer; run `compute_layout` independently per dlayer.
+   - Stack dlayer coordinate spaces vertically (gap = 80 px between dlayers).
+   - Emit one `mxCell` per dlayer with `parent="0"` (draw.io layer container).
+   - Groups get `parent=<dlayer_cell_id>` instead of `"1"`.
+   - Nodes in groups get `parent=<group_cell_id>` as today.
+   - Cross-dlayer edges always use off-page connectors regardless of Sugiyama
+     rank distance (add `dlayer` boundary check alongside the existing
+     `abs(src_rank - tgt_rank) >= 3` threshold).
+4. `_to_architecture()` returns a 5-tuple `(nodes, edges, groups, layer_order, dlayers)`.
+5. Tests: add `tests/test_dlayer_logic.py` — layer cell emission, cross-layer
+   connectors, ungrouped nodes, default-layer fallback.
+
+**Key invariants**:
+- `layer=` remains the Sugiyama rank hint within a dlayer (no rename).
+- `dlayer=` is the draw.io layer assignment (new orthogonal concept).
+- Nodes without `dlayer=` go to the default layer "1" as today.
+- Cross-dlayer edges whose source or target is in a group still work — the
+  off-page connectors anchor to the node cell, not the group cell.
+
 ## Advanced backlog
 
-- **Clickable / toggleable layer visibility** — draw.io has native
-  layer toggling in its viewer toolbar (`layers` already in
-  `_VIEWER_CONFIG`). Mapping our `layer_order` to mxGraph layers would
-  let users show/hide tiers (`edge`, `services`, `data`, …) per view.
-  Coexistence with the swim-lane groups needs design work — groups are
-  cells, layers are parent-of-cells.
+- **Clickable / toggleable layer visibility** — superseded by 0.4.0 above.
 - **Evolve in-house layout engines** — add force-directed, orthogonal
   (TSM/HOLA), and channel-routing variants alongside the existing
   Sugiyama + A\*. Avoid pulling in ELK/DAGRE per the no-external-dep
