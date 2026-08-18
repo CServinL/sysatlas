@@ -40,12 +40,16 @@ def compute_tree_layout(
     # Post-order: compute subtree leaf width
     leaf_width: dict[str, int] = {}
 
-    def _measure(n: str) -> int:
+    def _measure(n: str, ancestors: frozenset[str] = frozenset()) -> int:
+        # Reject a cycle reachable from root instead of recursing until
+        # Python's recursion limit raises RecursionError.
+        if n in ancestors:
+            raise ValueError(f"tree has a cycle reachable from the root: {n!r} is its own ancestor")
         kids = children.get(n, [])
         if not kids:
             leaf_width[n] = 1
             return 1
-        total = sum(_measure(k) for k in kids)
+        total = sum(_measure(k, ancestors | {n}) for k in kids)
         leaf_width[n] = total
         return total
 
