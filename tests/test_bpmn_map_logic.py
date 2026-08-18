@@ -54,6 +54,19 @@ class BPMNMapBuilder(unittest.TestCase):
             _ = b.diagram
 
 
+class BPMNMapLayout(unittest.TestCase):
+    def test_loop_back_flow_terminates(self) -> None:
+        from sysatlas._bpmn_layout import compute_bpmn_layout
+
+        b = BPMNMap()
+        b.event("s", kind="start").activity("review").activity("revise")
+        b.flow("s", "review")
+        b.flow("review", "revise")
+        b.flow("revise", "review")  # loop back
+        positions, sizes, pool_rects, lane_rects, routes, all_nodes = compute_bpmn_layout(b.diagram)
+        self.assertEqual(set(all_nodes), {"s", "review", "revise"})
+
+
 class BPMNMapSave(unittest.TestCase):
     def test_save_produces_html(self) -> None:
         b = BPMNMap(title="T")

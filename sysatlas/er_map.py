@@ -93,11 +93,18 @@ class ERMap:
         for n in roots:
             rank[n] = 0
             queue.append(n)
+        # Bound relaxations per node (Bellman-Ford style) so a cycle in
+        # the relationship graph can't relax forever.
+        visits: dict[str, int] = defaultdict(int)
+        max_visits = len(entities) + 1
         while queue:
             cur = queue.popleft()
             for nb in adj.get(cur, []):
+                if visits[nb] >= max_visits:
+                    continue
                 if nb not in rank or rank[nb] < rank[cur] + 1:
                     rank[nb] = rank[cur] + 1
+                    visits[nb] += 1
                     queue.append(nb)
         next_r = max(rank.values(), default=-1) + 1
         for n in entities:

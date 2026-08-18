@@ -68,12 +68,19 @@ def compute_bpmn_layout(diagram):
     for s in starts:
         order[s] = 0
         queue.append(s)
+    # Bound relaxations per node (Bellman-Ford style) so a loop back-edge
+    # (common in BPMN) can't relax forever.
+    visits: dict[str, int] = defaultdict(int)
+    max_visits = len(all_nodes) + 1
     while queue:
         cur = queue.popleft()
         for nb in adj.get(cur, []):
+            if visits[nb] >= max_visits:
+                continue
             new_order = order[cur] + 1
             if nb not in order or new_order > order[nb]:
                 order[nb] = new_order
+                visits[nb] += 1
                 queue.append(nb)
     next_o = max(order.values(), default=-1) + 1
     for n in all_nodes:

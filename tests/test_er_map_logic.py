@@ -54,6 +54,17 @@ class ERMapSave(unittest.TestCase):
         self.assertIn("GraphViewer", content)
         self.assertIn("mxGraphModel", content)
 
+    def test_self_relate_terminates(self) -> None:
+        e = ERMap(title="T").entity("A").relate("A", "A", name="self")
+        nodes, edges, groups, layer_order = e._to_architecture()
+        self.assertIn("A", nodes)
+        self.assertEqual(len(edges), 1)
+
+    def test_two_node_cycle_terminates(self) -> None:
+        e = ERMap(title="T").relate("A", "B", name="r1").relate("B", "A", name="r2")
+        nodes, edges, groups, layer_order = e._to_architecture()
+        self.assertEqual(set(nodes), {"A", "B"})
+
 
 if __name__ == "__main__":
     unittest.main()
