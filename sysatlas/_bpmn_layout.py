@@ -53,9 +53,13 @@ def compute_bpmn_layout(diagram):
     for name, lane in node_lane.items():
         nodes_by_lane[lane].append(name)
 
+    # Self-referencing flows carry no ordering information -- excluded for
+    # the same reason er_map.py's rank BFS excludes them (see that file).
     adj: dict[str, list[str]] = defaultdict(list)
     in_deg: dict[str, int] = defaultdict(int)
     for f in diagram.flows:
+        if f.source == f.target:
+            continue
         if f.kind == "sequence" or f.kind == "default" or f.kind == "conditional":
             adj[f.source].append(f.target)
             in_deg[f.target] += 1

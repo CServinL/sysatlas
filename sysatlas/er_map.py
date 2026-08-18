@@ -83,12 +83,22 @@ class ERMap:
         entities = diagram.entities
         rels = diagram.relationships
 
+        # A self-relationship (r.source == r.target) carries no layering
+        # information -- an entity can't be "one rank beyond itself" -- so
+        # it's excluded from both the rank BFS and the root/incoming-edge
+        # check below. Included without this exclusion, each self-loop
+        # relaxation (harmless on its own, bounded by the cap further down)
+        # still inflates the entity's own rank, which then makes its real
+        # edges to *other* entities look like they span many layers,
+        # mis-triggering the long-edge -> connector-glyph rendering
+        # (_connectors.py) for edges that are actually adjacent.
         adj: dict[str, list[str]] = defaultdict(list)
         for r in rels:
-            adj[r.source].append(r.target)
+            if r.source != r.target:
+                adj[r.source].append(r.target)
 
         rank: dict[str, int] = {}
-        roots = [n for n in entities if not any(r.target == n for r in rels)] or list(entities)
+        roots = [n for n in entities if not any(r.target == n and r.source != n for r in rels)] or list(entities)
         queue: deque[str] = deque()
         for n in roots:
             rank[n] = 0
