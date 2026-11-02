@@ -6,6 +6,19 @@ via sysatlas.yaml. The set of layer names matches what SystemMap expects.
 from __future__ import annotations
 
 
+LAYER_ORDER: tuple[str, ...] = (
+    "render", "layout", "edge", "services", "ontology",
+    "builders", "data", "reflection", "infra", "external",
+)
+"""Canonical top-down layer order, shared by the SystemMap builder and the atlas
+so the two never disagree. Names not listed sort last."""
+
+
+def layer_rank(layer: str) -> int:
+    """Position of a layer name in LAYER_ORDER; unknown names sort last."""
+    return LAYER_ORDER.index(layer) if layer in LAYER_ORDER else len(LAYER_ORDER)
+
+
 _LAYER_RULES: list[tuple[tuple[str, ...], str]] = [
     (("api", "web", "http", "rest", "edge", "gateway", "controllers", "handlers"), "edge"),
     (("ui", "frontend", "views", "templates", "client"), "edge"),

@@ -76,9 +76,13 @@ m.save("docs/reflection/module-map.html")
 sysatlas/
 └── _reflection/
     ├── __init__.py        — Reflection class, sysatlas.reflect entry point
-    ├── parser.py          — AST walk: modules, imports, classes
+    ├── parser.py          — AST walk: modules, imports, docstring, public symbols, LOC
+    ├── parser_rust.py     — tree-sitter Rust walk (optional extra)
     ├── resolve.py         — import string → in-tree module path
-    ├── layers.py          — heuristic + hints application
+    ├── layers.py          — heuristic + hints application; canonical LAYER_ORDER
+    ├── hints.py           — sysatlas.json / sysatlas.yaml loader
+    ├── metrics.py         — fan-in/out, import cycles, cross-package rollup
+    ├── atlas.py           — deterministic Markdown architecture atlas + Atlas model
     └── merge.py           — round-trip merge with a blueprint SystemMap
 ```
 
@@ -120,6 +124,7 @@ invoke.
 | 4 | Round-trip merge (`merge.py`) | ✅ done | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
 | 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html` via `to_system()` (multi-view, no complexity warning); README table updated. |
 | 6 | Class granularity (`granularity="class"`) | ⏸ deferred | Optional follow-up; not in this PR. |
+| 7 | Architecture atlas (`Reflection.to_atlas()` / `to_atlas_model()` / `save_atlas()`) | ✅ done | Deterministic Markdown digest of the modularization (packages, per-module purpose + public symbols, dependency structure, layers, import cycles, coupling hotspots). Byte-identical across `PYTHONHASHSEED`. Structured `Atlas` model behind it (JSON). Rust degrades gracefully (no purpose/symbol columns). Committed `docs/reflection/atlas.md` for sysatlas itself, regen via `python docs/reflection/atlas.py`. |
 
 ## Extras landed on the same branch (post-M5)
 
@@ -168,8 +173,19 @@ the feature in anger:
   `tree-sitter-rust>=0.24`). 25 tests in
   `tests/test_reflection_rust_logic.py`.
 
-## Out of scope (for now)
+## Out of scope / follow-up
 
+- **Rust symbol + doc-comment extraction** — `parser_rust.py` fills only
+  structural fields today; `pub fn` / `pub struct` / `pub enum` / `pub trait`
+  and `///` / `//!` docs would remove the atlas column degradation. See
+  `# TODO(atlas):` in `parser_rust.py`.
+- **Class-granularity atlas rows** — pairs with milestone 6.
+- **Rust `main.rs` + `lib.rs` both map to `crate`** — `parser_rust._module_name`
+  collapses them to one dotted name; a crate with both (common for Tauri apps)
+  yields two `Module`s with `name="crate"`. The atlas dedupes defensively
+  (`_dedupe_by_name`); the real fix is to name the binary shim `crate.main`.
+- **Committed `atlas.json`** + published schema; atlas drift check in CI
+  (regenerate, `git diff --exit-code`).
 - Dynamic import detection (plugin systems, `importlib.import_module(...)`).
 - Type-driven connections (call graph, type-hint dependency). Imports
   only.

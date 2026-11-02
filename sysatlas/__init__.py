@@ -34,10 +34,13 @@ __all__ = [
     "reflect_rust",
     "llm_guide",
     "llm_guide_path",
+    "skill",
+    "skill_path",
 ]
-__version__ = "0.3.2"
+__version__ = "0.3.4"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
+_SKILL = Path(__file__).parent / "_skill" / "SKILL.md"
 
 
 def llm_guide() -> str:
@@ -48,3 +51,13 @@ def llm_guide() -> str:
 def llm_guide_path() -> str:
     """Return the absolute path of the bundled LLM usage guide."""
     return str(_LLM_GUIDE)
+
+
+def skill() -> str:
+    """Return the bundled Claude Code Skill (SKILL.md) as a markdown string."""
+    return _SKILL.read_text(encoding="utf-8")
+
+
+def skill_path() -> str:
+    """Return the absolute path of the bundled Claude Code Skill file."""
+    return str(_SKILL)

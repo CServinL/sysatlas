@@ -4,6 +4,37 @@ You are a coding assistant working in a project that has `sysatlas`
 installed. This file tells you how to use it. Read all of it before
 writing or editing any sysatlas-related code.
 
+If you are a Claude Code session and `.claude/skills/sysatlas/` isn't
+already installed in this project, consider installing the bundled Skill
+instead — it covers the same ground and gets auto-discovered on future
+turns without a manual reminder. See `sysatlas.skill_path()` or the
+"Installing the sysatlas Skill" section of the README.
+
+## Architecture atlas — read this first
+
+If this project commits an **architecture atlas** (default location
+`docs/reflection/atlas.md`), read it before exploring the source. It is a
+deterministic, token-cheap Markdown digest of how the repo is modularized —
+packages, each module's purpose and public symbols, the dependency structure,
+layering, import cycles, and coupling hotspots. It lets you hold a holistic
+view of the codebase without reading every file.
+
+Regenerate it whenever you add, remove, or rename a module, class, or
+function:
+
+```python
+import sysatlas
+sysatlas.reflect("path/to/source/root").save_atlas("docs/reflection/atlas.md",
+                                                   title="…")
+```
+
+The atlas mirrors how the code *is* organized; it says nothing about how it
+*should* be. If the project also has an app spec, read both and flag where
+the code has drifted from the plan.
+
+`Reflection.to_atlas_model()` returns the same content as a Pydantic `Atlas`
+(JSON via `.model_dump_json()`) if you need it structured.
+
 ## What sysatlas is
 
 A Python library for **interactive architecture diagrams**. Diagrams
@@ -24,15 +55,16 @@ human-authored "annotation overlay" that gets merged in.
 ## Your responsibility in this project
 
 After you add, remove, or rename a module, class, or component, the
-diagrams under `docs/reflection/` (or wherever this project keeps
-them — check the project README) are stale. Regenerate them. The
-canonical commands:
+architecture atlas and the diagrams under `docs/reflection/` (or wherever
+this project keeps them — check the project README) are stale. Regenerate
+them. The canonical commands:
 
 ```python
 import sysatlas
 r = sysatlas.reflect("path/to/source/root")
+r.save_atlas("docs/reflection/atlas.md", title="…")   # holistic text digest
 m = r.to_system_map(title="…")
-m.save("docs/reflection/module-map.html")
+m.save("docs/reflection/module-map.html")              # diagram
 ```
 
 If the project has a hints file at the source root, `reflect()` will
@@ -60,6 +92,10 @@ sysatlas.BPMNMap        # BPMN process diagram
 sysatlas.reflect(path)  # reverse flow: code → Reflection → SystemMap
 sysatlas.llm_guide()    # returns this file as a string
 ```
+
+`Reflection` (returned by `reflect()` / `reflect_rust()`) exposes
+`.to_system_map()`, `.to_system()`, `.merge_with(overlay)`, `.exclude(...)`,
+and the atlas methods `.to_atlas()` / `.to_atlas_model()` / `.save_atlas(path)`.
 
 Do **not** import from `sysatlas._*` (private modules — `_ontology`,
 `_layout`, `_route`, etc.). The Pydantic schemas under
@@ -138,8 +174,8 @@ by adding `importlib` calls.
   `uml_class.py`, `bpmn.py`, `tree.py`.
 - One view = 5–10 components. If a diagram is bigger, split it across
   views with `System`, do not fight the layout engine.
-- After any structural code change, regenerate the affected reflection
-  diagrams. This is your job, not the user's.
+- After any structural code change, regenerate the architecture atlas
+  and the affected reflection diagrams. This is your job, not the user's.
 - Do not invent fields. The ontology is closed (`ConfigDict(extra="forbid")`
   on most models).
 

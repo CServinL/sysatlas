@@ -44,6 +44,11 @@ r = sysatlas.reflect("src/")
 m = r.to_system_map(title="src internals")
 m.save("docs/reflection/module-map.html")
 
+# …or a deterministic, token-cheap text digest of the modularization —
+# packages, per-module purpose, dependency structure, cycles, hotspots —
+# for an LLM to hold a holistic view without reading the source:
+r.save_atlas("docs/reflection/atlas.md", title="src")
+
 # Rust crate  (pip install 'sysatlas[reflect-rust]')
 r = sysatlas.reflect_rust("my-crate/")
 m = r.to_system_map(title="my-crate internals")
@@ -55,6 +60,21 @@ output is the same `SystemMap` the forward flow produces, so a thin
 human-authored "annotation overlay" (qualities, traces, viewpoints)
 can be merged onto reflected structure via `r.merge_with(overlay)`.
 Drift between intent and reality becomes visible instead of silent.
+
+#### What the atlas is for
+
+`atlas.md` is a **mirror of how the code is actually organized** — generated,
+never hand-written, so it cannot drift from the source. It describes
+structure only (packages, modules, dependencies, cycles, hotspots), not
+intent or behavior.
+
+Among its use cases:
+
+- **Orientation** — an LLM or a new contributor gets the whole-repo picture
+  without reading the source.
+- **Plan vs. reality** — pair it with an app spec (the *intended* design,
+  written by people) and compare what was planned with what the code became.
+- **Review** — commit it with the code so a diff shows structural change.
 
 ### The intended loop
 
@@ -80,15 +100,25 @@ repo. The one-liner to paste into your `CLAUDE.md` / `.cursorrules` /
 `AGENTS.md`:
 
 > Before editing this project, read sysatlas's LLM guide:
-> `python -c "import sysatlas; print(sysatlas.llm_guide())"`.
-> After any structural change (add/remove/rename modules or
-> components), regenerate the affected diagrams under
-> `docs/reflection/` using `sysatlas.reflect(...)` and commit them
+> `python -c "import sysatlas; print(sysatlas.llm_guide())"`, then read
+> the architecture atlas at `docs/reflection/atlas.md` for a holistic
+> view of the codebase. After any structural change (add/remove/rename
+> modules or components), regenerate the atlas and the affected diagrams
+> under `docs/reflection/` using `sysatlas.reflect(...)` and commit them
 > with the code change.
 
 The guide tells the assistant exactly which symbols are public, which
 fields the ontology accepts, and that diagrams are part of the
 deliverable — not an afterthought.
+
+### Installing the sysatlas Skill (Claude Code)
+
+sysatlas ships a Claude Code Skill so Claude auto-discovers how to use it —
+no manual reminder needed. Ask your assistant to install it once per project:
+
+> Install the sysatlas skill: copy the file at
+> `python -c "import sysatlas; print(sysatlas.skill_path())"` to
+> `.claude/skills/sysatlas/SKILL.md` in this project.
 
 ## Where to look
 

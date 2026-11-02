@@ -21,6 +21,16 @@ class Module(BaseModel):
     """Top-level package or first-segment (e.g. 'sysatlas', '_ontology')."""
     imports: list[str] = Field(default_factory=list)
     """In-tree dotted module names this module imports. Stdlib / third-party filtered out."""
+    doc: str = ""
+    """First non-empty line of the module docstring, stripped, capped at 200 chars."""
+    classes: list[str] = Field(default_factory=list)
+    """Top-level public class names, sorted. Empty for languages without symbol extraction."""
+    functions: list[str] = Field(default_factory=list)
+    """Top-level public function names, sorted. Empty for languages without symbol extraction."""
+    loc: int = 0
+    """Physical lines that are not blank and not comment-only."""
+    unparsed: bool = False
+    """True when the source could not be parsed (SyntaxError / null bytes); imports and symbols are then empty."""
 
 
 class ProjectGraph(BaseModel):
@@ -50,14 +60,21 @@ def scan(root: str | Path) -> ProjectGraph:
     modules: list[Module] = []
     for p in files:
         modname = _module_name(p, scan_root)
-        imports = _extract_imports(p, modname)
-        resolved = [r for r in (resolve_import(i, modname, in_tree_names) for i in imports) if r]
+        raw_imports, doc, classes, functions, loc, unparsed = _scan_source(p, modname)
+        resolved = [
+            r for r in (resolve_import(i, modname, in_tree_names) for i in raw_imports) if r
+        ]
         modules.append(
             Module(
                 name=modname,
                 path=str(p),
                 package=modname.split(".")[0],
                 imports=sorted(set(resolved)),
+                doc=doc,
+                classes=sorted(classes),
+                functions=sorted(functions),
+                loc=loc,
+                unparsed=unparsed,
             )
         )
     return ProjectGraph(root=str(scan_root), modules=modules)
@@ -76,28 +93,78 @@ def _module_name(path: Path, scan_root: Path) -> str:
     return ".".join(parts) if parts else ""
 
 
-def _extract_imports(path: Path, modname: str) -> list[str]:
-    """Return raw import strings (unresolved). 'from x.y import z' yields 'x.y.z' and 'x.y'."""
+def _scan_source(
+    path: Path, modname: str
+) -> tuple[list[str], str, list[str], list[str], int, bool]:
+    """One pass over a source file: raw imports, docstring line, symbols, LOC, parse-ok.
+
+    'from x.y import z' yields raw imports 'x.y.z' and 'x.y'. On a parse failure
+    (SyntaxError, embedded null bytes) imports/doc/symbols come back empty and
+    the last element is True, but LOC is still counted from the raw text so the
+    module stays visible.
+    """
+    text = path.read_text(encoding="utf-8", errors="replace")
+    loc = sum(
+        1 for line in text.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    )
     try:
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-    except SyntaxError:
-        return []
-    out: list[str] = []
-    for node in ast.walk(tree):
+        tree = ast.parse(text)
+    except (SyntaxError, ValueError):
+        return [], "", [], [], loc, True
+
+    imports: list[str] = []
+    for node in _walk_runtime(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                out.append(alias.name)
+                imports.append(alias.name)
         elif isinstance(node, ast.ImportFrom):
             base = _absolute_from(node, modname)
             if base is None:
                 continue
             for alias in node.names:
                 if alias.name == "*":
-                    out.append(base)
+                    imports.append(base)
                 else:
-                    out.append(f"{base}.{alias.name}" if base else alias.name)
-                    out.append(base)
-    return out
+                    imports.append(f"{base}.{alias.name}" if base else alias.name)
+                    imports.append(base)
+
+    raw_doc = ast.get_docstring(tree, clean=True) or ""
+    doc = next((ln.strip() for ln in raw_doc.splitlines() if ln.strip()), "")[:200]
+
+    classes = [
+        n.name for n in tree.body
+        if isinstance(n, ast.ClassDef) and not n.name.startswith("_")
+    ]
+    functions = [
+        n.name for n in tree.body
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and not n.name.startswith("_")
+    ]
+    return imports, doc, classes, functions, loc, False
+
+
+def _walk_runtime(tree: ast.AST):
+    """Like ast.walk, but skips the body of `if TYPE_CHECKING:` guards.
+
+    Type-only imports are not runtime dependencies, so counting them would
+    invent import cycles the code was deliberately written to avoid.
+    """
+    for node in ast.iter_child_nodes(tree):
+        if isinstance(node, ast.If) and _is_type_checking(node.test):
+            for sub in node.orelse:
+                yield sub
+                yield from _walk_runtime(sub)
+            continue
+        yield node
+        yield from _walk_runtime(node)
+
+
+def _is_type_checking(test: ast.expr) -> bool:
+    return (
+        (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING")
+        or (isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING")
+    )
 
 
 def _absolute_from(node: ast.ImportFrom, modname: str) -> str | None:

@@ -8,14 +8,18 @@ from __future__ import annotations
 import fnmatch
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 _BOUNDED_COMPLEXITY_LIMIT = 15
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from sysatlas._reflection.layers import infer_group, infer_layer
+from sysatlas._reflection.layers import infer_group, infer_layer, layer_rank
 from sysatlas._reflection.parser import ProjectGraph, scan
 from sysatlas.system_map import SystemMap
+
+if TYPE_CHECKING:
+    from sysatlas._reflection.atlas import Atlas
 
 
 class Hints(BaseModel):
@@ -87,12 +91,7 @@ class Reflection:
                 m.group(group)
                 groups_added.add(group)
 
-        _LAYER_TOP_DOWN = ["render", "layout", "edge", "services", "ontology",
-                           "builders", "data", "reflection", "infra", "external"]
-        def _layer_key(mod):
-            l = self._layer_for(mod.name)
-            return _LAYER_TOP_DOWN.index(l) if l in _LAYER_TOP_DOWN else len(_LAYER_TOP_DOWN)
-        for mod in sorted(kept, key=_layer_key):
+        for mod in sorted(kept, key=lambda mod: layer_rank(self._layer_for(mod.name))):
             m.add_component(
                 self._display_name(mod.name),
                 group=self._group_for(mod.name),
@@ -125,6 +124,28 @@ class Reflection:
                 stacklevel=2,
             )
         return m
+
+    def to_atlas(self, title: str = "", *, max_modules: int = 80) -> str:
+        """Return a deterministic Markdown "architecture atlas" of the scanned tree.
+
+        A bounded, token-cheap, diffable digest of how the repo is modularized —
+        packages, per-module purpose and public symbols, dependency structure,
+        layering, import cycles, coupling hotspots. Same source tree → identical
+        output. For the structured form use `to_atlas_model()`.
+        """
+        from sysatlas._reflection.atlas import build_atlas
+        return build_atlas(self, title, max_modules=max_modules)
+
+    def to_atlas_model(self, title: str = "", *, max_modules: int = 80) -> "Atlas":
+        """Structured `Atlas` behind `to_atlas()`; JSON via `.model_dump_json()`."""
+        from sysatlas._reflection.atlas import build_atlas_model
+        return build_atlas_model(self, title, max_modules=max_modules)
+
+    def save_atlas(self, path, title: str = "", *, max_modules: int = 80) -> str:
+        """Write the Markdown atlas to `path` and return it."""
+        text = self.to_atlas(title, max_modules=max_modules)
+        Path(path).write_text(text, encoding="utf-8")
+        return text
 
     def merge_with(self, overlay: SystemMap, title: str = "") -> SystemMap:
         """Reflect, then apply a user-authored annotation overlay."""

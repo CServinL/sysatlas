@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "sysatlas"
-version = "0.3.3"
+version = "0.3.4"
 description = "Interactive system and architecture diagram library"
 readme = "README.md"
 license = { text = "Apache-2.0" }
@@ -37,3 +37,4 @@ packages = ["sysatlas"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "sysatlas/LLM_GUIDE.md" = "sysatlas/LLM_GUIDE.md"
+"sysatlas/_skill/SKILL.md" = "sysatlas/_skill/SKILL.md"
