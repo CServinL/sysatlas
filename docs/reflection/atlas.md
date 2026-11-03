@@ -7,7 +7,7 @@
 sysatlas is a Python library for architecture diagrams. Pydantic-backed builders describe a system, and a layout and routing engine renders it as interactive draw.io HTML. A reverse flow reads existing code and produces the same diagrams, plus a deterministic text atlas of the architecture. Only the names exported from the root package are public; modules that start with an underscore are private.
 
 - Modules: 49
-- Components: 17
+- Components: 22
 - Internal import edges: 67
 - Packages: 7
 - Import cycles: 2
@@ -19,18 +19,23 @@ A component is a cluster of modules that acts as one unit: modules that import e
 
 | component | tier | layer | modules | roles | purpose | depends on | external |
 |---|---|---|---|---|---|---|---|
-| `_reflection` | 0 | reflection | 15 (2244 loc) | logic×15 | Reads a source tree without running it and turns it into diagrams and the architecture atlas: parser, hints, graph metrics, component clust… | diagram-types, system, system_map | — |
 | `bpmn_map` | 0 | builders | 1 (74 loc) | logic×1 | Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline. | _render, bpmn-pipeline, diagram-types | — |
 | `class_map` | 0 | builders | 1 (196 loc) | logic×1 | Fluent builder for UML class diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `er_map` | 0 | builders | 1 (156 loc) | logic×1 | Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
+| `reflection` | 0 | reflection | 10 (1689 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, project, resolve, spec +2 | — |
 | `sequence_map` | 0 | builders | 1 (77 loc) | logic×1 | Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline. | _render, diagram-types, sequence-pipeline | — |
 | `state_map` | 0 | builders | 1 (168 loc) | logic×1 | Fluent builder for state machine diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
 | `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
+| `parser` | 1 | reflection | 1 (374 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
+| `project` | 1 | reflection | 1 (35 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
 | `sequence-pipeline` | 1 | layout | 2 (224 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
+| `spec` | 1 | reflection | 1 (107 loc) | logic×1 | Holds the planned architecture from the hints file and checks the code's import edges against it. | — | — |
 | `system` | 1 | builders | 1 (196 loc) | logic×1 | Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-v… | _render, _trace_matrix, cross-cutting, system_map | — |
 | `tree-pipeline` | 1 | layout | 2 (204 loc) | logic×2 | Lays out tree diagrams and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render | — |
 | `_trace_matrix` | 2 | render | 1 (109 loc) | logic×1 | Renders trace links between components as an HTML matrix of sources by targets. | cross-cutting | — |
+| `external` | 2 | reflection | 1 (72 loc) | logic×1 | Maps import names to kinds of external system: database, HTTP, queue, cloud, model API. | — | — |
+| `resolve` | 2 | reflection | 1 (17 loc) | logic×1 | Decides whether an import target lives inside the scanned tree. | — | — |
 | `system_map` | 2 | builders | 1 (93 loc) | logic×1 | Fluent builder for one architecture diagram. Hands the finished diagram to the layout and render engine. | _render, diagram-types | — |
 | `_render` | 3 | layout | 6 (2270 loc) | logic×6 | The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on… | _vendor | — |
 | `diagram-types` | 3 | ontology | 7 (427 loc) | model×7 | Pydantic schemas for each diagram kind: architecture, BPMN, ER, sequence, state machine, tree and UML class. Data only; no layout or render… | cross-cutting | — |
@@ -39,9 +44,9 @@ A component is a cluster of modules that acts as one unit: modules that import e
 
 ## Component dependencies
 
-- **tier 0**: _reflection, bpmn_map, class_map, er_map, sequence_map, state_map, tree_map
-- **tier 1**: bpmn-pipeline, sequence-pipeline, system, tree-pipeline
-- **tier 2**: _trace_matrix, system_map
+- **tier 0**: bpmn_map, class_map, er_map, reflection, sequence_map, state_map, tree_map
+- **tier 1**: bpmn-pipeline, parser, project, sequence-pipeline, spec, system, tree-pipeline
+- **tier 2**: _trace_matrix, external, resolve, system_map
 - **tier 3**: _render, diagram-types
 - **tier 4**: _vendor, cross-cutting
 
@@ -57,9 +62,11 @@ Other third-party libraries: `networkx`, `pydantic`, `tree_sitter`, `tree_sitter
 
 ## Data models
 
-- **_reflection** (30): ArchitectureSpec, Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint, AtlasEnvVar, AtlasExternal, AtlasGaps, AtlasLayer, AtlasModels, … +18
 - **cross-cutting** (10): ArchitectureDescription, Concern, EntityRef, ModelKind, QualityAttribute, Stakeholder, TraceLink, TraceLinkSet, View, Viewpoint
 - **diagram-types** (30): Activation, Activity, Actor, ArchitectureDiagram, Attribute, BPMNDiagram, Class, ClassDiagram, Component, Connection, ERDiagram, Entity, … +18
+- **parser** (2): Module, ProjectGraph
+- **reflection** (24): Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint, AtlasEnvVar, AtlasExternal, AtlasGaps, AtlasLayer, AtlasModels, AtlasModule, … +12
+- **spec** (4): ArchitectureSpec, Conformance, SpecComponent, SpecViolation
 
 ## Configuration
 
@@ -69,7 +76,7 @@ _No environment variables read._
 
 _Written by hand or by an LLM from the intent overlay; not generated from imports._
 
-- **Deterministic generated artifact** — Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed. Components: _reflection.
+- **Deterministic generated artifact** — Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed. Components: parser, reflection.
 - **Fluent builder over a typed schema** — Each builder collects chained calls into a validated Pydantic model, which the engine then renders. Components: bpmn_map, class_map, diagram-types, er_map, sequence_map, state_map, system, system_map, tree_map.
 - **Shared engine with specialized pipelines** — Architecture, state, ER and class diagrams go through one layered layout and routing engine. BPMN, sequence and tree diagrams have their own layout and render modules, and reuse only the shared XML and viewer writer. Components: _render, bpmn-pipeline, sequence-pipeline, tree-pipeline.
 
@@ -113,7 +120,7 @@ _From the hints file or from module names; not derived from imports._
 |---|---|---|---|---|---|---|
 | `atlas` | Deterministic "architecture atlas" model from a Reflection. | logic | xl | Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint… | 8 | 1 |
 | `atlas_render` | Markdown rendering of an Atlas. Pure function of the model; no I/O. | logic | l | render_markdown() | 0 | 1 |
-| `components` | Group modules into architectural components and order them by dependency. | logic | m | ComponentCore, ComponentEdge, ComponentGraph, compute_components() | 0 | 1 |
+| `components` | Group modules into architectural components and order them by dependency. | logic | l | ComponentCore, ComponentEdge, ComponentGraph, compute_components() | 0 | 1 |
 | `external` | Which imports mean "the system talks to something outside itself". | logic | s | classify_external(), external_roots() | 0 | 2 |
 | `hints` | Load an optional sysatlas hints file from the scan root. | logic | s | load_hints() | 1 | 1 |
 | `intent` | The human / LLM-authored layer: what components are for and which patterns they follow. | logic | s | Intent, IntentComponent, IntentPattern, fingerprint(), load_intent() | 0 | 1 |

@@ -76,7 +76,7 @@ m.save("docs/reflection/module-map.html")
 sysatlas/
 └── _reflection/
     ├── __init__.py        — Reflection class, sysatlas.reflect entry point
-    ├── parser.py          — AST walk: modules, imports, docstring, public symbols, LOC
+    ├── parser.py          — AST walk: modules, imports, docstring, public symbols, LOC, entry points, models, env reads. A scan root without `__init__.py` that imports itself by name (namespace package) is named as a package
     ├── parser_rust.py     — tree-sitter Rust walk (optional extra)
     ├── resolve.py         — import string → in-tree module path
     ├── layers.py          — heuristic + hints application; canonical LAYER_ORDER

@@ -277,6 +277,30 @@ class Components(unittest.TestCase):
         self.assertLess(tier["top"], tier["low"])
         self.assertEqual(tier["top"], 0)
 
+    def test_oversized_package_is_split_by_subpackage(self) -> None:
+        files = {f"big/sub{i // 4}/m{i}.py": "X = 1\n" for i in range(16)}
+        files["big/top.py"] = "Y = 1\n"
+        model = self._model(files)
+        names = sorted(c.name for c in model.components)
+        self.assertEqual([n for n in names if n.startswith("big.")], [f"big.sub{i}" for i in range(4)])
+        self.assertTrue(all(c.module_count <= 10 for c in model.components))
+
+    def test_hinted_group_is_never_split(self) -> None:
+        files = {f"m{i}.py": "X = 1\n" for i in range(14)}
+        hints = Hints(group={f"pkg.m{i}": "bag" for i in range(14)})
+        model = self._model(files, hints)
+        self.assertEqual([(c.name, c.module_count) for c in model.components], [("bag", 14)])
+
+    def test_clashing_names_keep_the_name_on_the_biggest_block(self) -> None:
+        model = self._model({
+            "util/a.py": "X = 1\n",
+            "util/b.py": "X = 1\n",
+            "util.py": "Z = 1\n",
+        })
+        names = sorted(c.name for c in model.components)
+        self.assertIn("util", names)
+        self.assertTrue(any(n.startswith("util (") for n in names), names)
+
     def test_component_names_are_unique(self) -> None:
         model = self._model({
             "a/util.py": "X = 1\n",
@@ -610,6 +634,50 @@ class ReviewRegressions(unittest.TestCase):
         self.assertEqual(model.conformance.unmapped_modules, ["pkg.util"])
         self.assertFalse(model.conformance.ok)
         self.assertIn("are not checked", model.to_markdown())
+
+
+class ImportResolution(unittest.TestCase):
+    """Parser fixes found by running the atlas on real repositories."""
+
+    def test_namespace_package_root_resolves_its_own_imports(self) -> None:
+        base = Path(tempfile.mkdtemp())
+        root = base / "app"  # no __init__.py: an implicit namespace package
+        (root / "web").mkdir(parents=True)
+        (root / "web" / "views.py").write_text("from app.core import logic\nimport rich\n")
+        (root / "core").mkdir()
+        (root / "core" / "logic.py").write_text("X = 1\n")
+        model = sysatlas.reflect(root, hints=Hints()).to_atlas_model()
+        self.assertEqual(
+            sorted(m.name for m in model.modules), ["app.core.logic", "app.web.views"]
+        )
+        views = next(m for m in model.modules if m.name == "app.web.views")
+        self.assertEqual(views.internal_deps, ["app.core.logic"])
+        self.assertEqual(views.external, ["rich"])
+        self.assertEqual(model.libraries, ["rich"])
+
+    def test_container_root_is_not_given_a_prefix(self) -> None:
+        base = Path(tempfile.mkdtemp())
+        root = base / "src"
+        (root / "pkg").mkdir(parents=True)
+        (root / "pkg" / "__init__.py").write_text("")
+        (root / "pkg" / "a.py").write_text("from pkg import b\n")
+        (root / "pkg" / "b.py").write_text("X = 1\n")
+        names = sorted(m.name for m in sysatlas.reflect(root, hints=Hints()).graph.modules)
+        self.assertEqual(names, ["pkg", "pkg.a", "pkg.b"])
+
+    def test_relative_import_inside_init_means_the_package_itself(self) -> None:
+        root = _tree({"sub/__init__.py": "from .worker import run\nfrom . import helper\n",
+                      "sub/worker.py": "def run(): ...\n",
+                      "sub/helper.py": "X = 1\n"})
+        graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
+        self.assertEqual(graph["pkg.sub"].imports, ["pkg.sub.helper", "pkg.sub.worker"])
+        self.assertEqual(graph["pkg.sub"].external, [])
+
+    def test_relative_import_in_a_regular_module_still_means_the_parent(self) -> None:
+        root = _tree({"sub/__init__.py": "", "sub/a.py": "from . import b\nfrom ..top import T\n",
+                      "sub/b.py": "X = 1\n", "top.py": "T = 1\n"})
+        graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
+        self.assertEqual(graph["pkg.sub.a"].imports, ["pkg.sub", "pkg.sub.b", "pkg.top"])
 
 
 if __name__ == "__main__":

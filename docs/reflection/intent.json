@@ -1,13 +1,6 @@
 {
   "summary": "sysatlas is a Python library for architecture diagrams. Pydantic-backed builders describe a system, and a layout and routing engine renders it as interactive draw.io HTML. A reverse flow reads existing code and produces the same diagrams, plus a deterministic text atlas of the architecture. Only the names exported from the root package are public; modules that start with an underscore are private.",
   "components": {
-    "_reflection": {
-      "purpose": "Reads a source tree without running it and turns it into diagrams and the architecture atlas: parser, hints, graph metrics, component clustering, spec check, intent merge, atlas model and Markdown output. Builds SystemMap and System objects but does not render them.",
-      "fingerprint": "0b6807b28679",
-      "patterns": [
-        "Deterministic generated artifact"
-      ]
-    },
     "bpmn_map": {
       "purpose": "Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline.",
       "fingerprint": "d199f83311f6",
@@ -28,6 +21,13 @@
       "patterns": [
         "Fluent builder over a typed schema"
       ]
+    },
+    "reflection": {
+      "purpose": "The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown writer, merge with a hand-written overlay, and the Rust parser. Builds SystemMap and System objects but does not render them.",
+      "patterns": [
+        "Deterministic generated artifact"
+      ],
+      "fingerprint": "a2fab297b051"
     },
     "sequence_map": {
       "purpose": "Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline.",
@@ -57,11 +57,33 @@
         "Shared engine with specialized pipelines"
       ]
     },
+    "parser": {
+      "purpose": "Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and environment reads.",
+      "patterns": [
+        "Deterministic generated artifact"
+      ],
+      "fingerprint": "ff3f8825f24d"
+    },
+    "project": {
+      "purpose": "Reads the console scripts declared in the nearest pyproject.toml.",
+      "fingerprint": "e1bebf9c320a"
+    },
     "sequence-pipeline": {
       "purpose": "Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layered engine.",
       "fingerprint": "5cb5df21a4d9",
       "patterns": [
         "Shared engine with specialized pipelines"
+      ]
+    },
+    "spec": {
+      "purpose": "Holds the planned architecture from the hints file and checks the code's import edges against it.",
+      "fingerprint": "278cc49c0dbd"
+    },
+    "system": {
+      "purpose": "Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-view references. Builds on SystemMap.",
+      "fingerprint": "012406e4c239",
+      "patterns": [
+        "Fluent builder over a typed schema"
       ]
     },
     "tree-pipeline": {
@@ -71,12 +93,17 @@
         "Shared engine with specialized pipelines"
       ]
     },
-    "system": {
-      "purpose": "Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-view references. Builds on SystemMap.",
-      "fingerprint": "012406e4c239",
-      "patterns": [
-        "Fluent builder over a typed schema"
-      ]
+    "_trace_matrix": {
+      "purpose": "Renders trace links between components as an HTML matrix of sources by targets.",
+      "fingerprint": "e60e755a6b37"
+    },
+    "external": {
+      "purpose": "Maps import names to kinds of external system: database, HTTP, queue, cloud, model API.",
+      "fingerprint": "ad8b2f7508f5"
+    },
+    "resolve": {
+      "purpose": "Decides whether an import target lives inside the scanned tree.",
+      "fingerprint": "307dfe84b2ad"
     },
     "system_map": {
       "purpose": "Fluent builder for one architecture diagram. Hands the finished diagram to the layout and render engine.",
@@ -84,10 +111,6 @@
       "patterns": [
         "Fluent builder over a typed schema"
       ]
-    },
-    "_trace_matrix": {
-      "purpose": "Renders trace links between components as an HTML matrix of sources by targets.",
-      "fingerprint": "e60e755a6b37"
     },
     "_render": {
       "purpose": "The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on the vendored viewer script.",
@@ -142,7 +165,8 @@
       "name": "Deterministic generated artifact",
       "description": "Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed.",
       "components": [
-        "_reflection"
+        "parser",
+        "reflection"
       ]
     }
   ]

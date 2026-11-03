@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import ast
+import re
 from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -67,13 +68,15 @@ def scan(root: str | Path) -> ProjectGraph:
         scan_root = root_path
         files = sorted(p for p in scan_root.rglob("*.py") if "__pycache__" not in p.parts)
 
-    in_tree_names = {_module_name(p, scan_root) for p in files}
+    prefix = _namespace_prefix(scan_root, files)
+    names = {p: _module_name(p, scan_root, prefix) for p in files}
+    in_tree_names = set(names.values())
     in_tree_tops = {n.split(".")[0] for n in in_tree_names}
-    scan_of = {p: _scan_source(p, _module_name(p, scan_root)) for p in files}
-    models_of = _resolve_models({_module_name(p, scan_root): s for p, s in scan_of.items()})
+    scan_of = {p: _scan_source(p, names[p]) for p in files}
+    models_of = _resolve_models({names[p]: s for p, s in scan_of.items()})
     modules: list[Module] = []
     for p in files:
-        modname = _module_name(p, scan_root)
+        modname = names[p]
         src = scan_of[p]
         resolved = [
             r for r in (resolve_import(i, modname, in_tree_names) for i in src.imports) if r
@@ -99,16 +102,36 @@ def scan(root: str | Path) -> ProjectGraph:
     return ProjectGraph(root=str(scan_root), modules=modules)
 
 
-def _module_name(path: Path, scan_root: Path) -> str:
+def _namespace_prefix(scan_root: Path, files: list[Path]) -> str:
+    """Name to prefix module names with when scan_root is a package without __init__.py.
+
+    A directory such as `prisma/` with no `__init__.py` is a namespace package:
+    its code still imports itself as `prisma.x`. When any file does so, the
+    directory name is the top-level package, as if `__init__.py` were present.
+    """
+    name = scan_root.name
+    if (scan_root / "__init__.py").exists() or not name.isidentifier():
+        return ""
+    own_import = re.compile(rf"^\s*(?:from|import)\s+{re.escape(name)}(?:\.|\s|$)", re.M)
+    for p in files:
+        if own_import.search(p.read_text(encoding="utf-8", errors="replace")):
+            return name
+    return ""
+
+
+def _module_name(path: Path, scan_root: Path, prefix: str = "") -> str:
     rel = path.relative_to(scan_root).with_suffix("")
     parts = list(rel.parts)
     if parts and parts[-1] == "__init__":
         parts = parts[:-1]
-    # If scan_root is itself a package (has __init__.py), prefix with its name
-    # so imports of "pkg.x" resolve. Otherwise scan_root is a container like
-    # "src/" — use the package directory under it as the top-level instead.
+    # If scan_root is itself a package (has __init__.py, or is a namespace
+    # package that imports itself by name), prefix with its name so imports of
+    # "pkg.x" resolve. Otherwise scan_root is a container like "src/" — use
+    # the package directory under it as the top-level instead.
     if (scan_root / "__init__.py").exists():
         return ".".join([scan_root.name, *parts]) if parts else scan_root.name
+    if prefix:
+        return ".".join([prefix, *parts])
     return ".".join(parts) if parts else ""
 
 
@@ -164,6 +187,7 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
     except (SyntaxError, ValueError):
         return _SourceScan(loc=loc, unparsed=True)
 
+    is_package = path.name == "__init__.py"
     nodes = list(_walk_runtime(tree))
     imports: list[str] = []
     aliases: dict[str, str] = {}
@@ -175,7 +199,7 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
                 if alias.asname:
                     aliases[alias.asname] = alias.name
         elif isinstance(node, ast.ImportFrom):
-            base = _absolute_from(node, modname)
+            base = _absolute_from(node, modname, is_package)
             if base is None:
                 continue
             for alias in node.names:
@@ -183,7 +207,8 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
                     imports.append(base)
                     continue
                 imports.append(f"{base}.{alias.name}" if base else alias.name)
-                imports.append(base)
+                if base != modname:
+                    imports.append(base)
                 aliases[alias.asname or alias.name] = f"{base}.{alias.name}" if base else alias.name
                 if node.level == 0 and base == "os" and alias.name in os_env:
                     os_env[alias.name].add(alias.asname or alias.name)
@@ -393,19 +418,23 @@ def _is_type_checking(test: ast.expr) -> bool:
     )
 
 
-def _absolute_from(node: ast.ImportFrom, modname: str) -> str | None:
-    """Resolve a 'from .x import y' relative import to an absolute dotted prefix."""
+def _absolute_from(node: ast.ImportFrom, modname: str, is_package: bool = False) -> str | None:
+    """Resolve a 'from .x import y' relative import to an absolute dotted prefix.
+
+    In a package's `__init__.py` the module name is the package itself, so one
+    leading dot means that package; in a regular module it means the parent.
+    """
     if node.level == 0:
         return node.module or ""
     parts = modname.split(".")
-    if node.level > len(parts):
+    up = node.level - 1 if is_package else node.level
+    if up > len(parts):
         return None
-    base = parts[: len(parts) - node.level]
+    base = parts[: len(parts) - up]
     if node.module:
         base = base + node.module.split(".")
-    # Empty base means the import resolves to the package root (e.g.
-    # `from . import x` inside pkg/__init__.py where modname == "pkg").
-    # Treat that as the current package itself so the edge is captured.
+    # Empty base: a top-level module doing `from . import x`. Treat it as the
+    # module's own top-level name so the edge is captured.
     if not base:
         return parts[0] if parts else ""
     return ".".join(base)

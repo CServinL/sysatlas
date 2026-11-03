@@ -5,7 +5,8 @@ depend on dict / set order or PYTHONHASHSEED.
 
 Steps:
 1. Seed blocks: modules that share a (hinted or inferred) group start as one
-   block; every other module is its own block.
+   block; every other module is its own block. An inferred group that already
+   exceeds the size cap is split by its next package level.
 2. Merge blocks that import each other in a cycle.
 3. Absorb a block into the one block that alone depends on it, when both sit
    in the same layer and the result stays small. A helper used by one caller
@@ -73,25 +74,49 @@ def compute_components(
     label_of: Callable[[str], str],
 ) -> ComponentGraph:
     """Cluster `names` (dotted module names) into components over `edges` (src imports dst)."""
-    fan_in: Counter[str] = Counter(dst for _, dst in edges)
+    degree: Counter[str] = Counter(m for edge in edges for m in edge)
     blocks = _seed_blocks(sorted(names), group_of, label_of)
-    blocks = _merge_cycles(blocks, edges, fan_in)
+    blocks = _merge_cycles(blocks, edges, degree)
     blocks = _absorb_private_helpers(blocks, edges, layer_of)
-    blocks = _unique_names(blocks, fan_in)
+    blocks = _unique_names(blocks, degree)
     return _build_graph(blocks, edges)
 
 
 def _seed_blocks(
     names: list[str], group_of: Callable[[str], str | None], label_of: Callable[[str], str]
 ) -> dict[str, _Block]:
-    blocks: dict[str, _Block] = {}
+    by_group: dict[str, list[str]] = {}
     for n in names:
         group = group_of(n)
-        key = f"g:{group}" if group else f"m:{n}"
-        if key not in blocks:
-            blocks[key] = _Block(name=group or label_of(n), members=set())
-        blocks[key].members.add(n)
+        by_group.setdefault(group or f"\0{n}", []).append(n)
+
+    blocks: dict[str, _Block] = {}
+    for key in sorted(by_group):
+        members = by_group[key]
+        if key.startswith("\0"):
+            blocks[f"m:{members[0]}"] = _Block(name=label_of(members[0]), members=set(members))
+        elif len(members) > MAX_COMPONENT_MODULES and all(_is_path_group(n, key) for n in members):
+            for n in members:
+                sub = _subpackage(n)
+                if sub is None:
+                    blocks[f"m:{n}"] = _Block(name=label_of(n), members={n})
+                else:
+                    blocks.setdefault(f"g:{key}.{sub}", _Block(name=f"{key}.{sub}", members=set())).members.add(n)
+        else:
+            blocks[f"g:{key}"] = _Block(name=key, members=set(members))
     return blocks
+
+
+def _is_path_group(name: str, group: str) -> bool:
+    """True when `group` is the package segment of `name` (an inferred group, not a hinted label)."""
+    parts = name.split(".")
+    return len(parts) > 1 and parts[1] == group
+
+
+def _subpackage(name: str) -> str | None:
+    """Next package level below the group: 'pkg.grp.sub.mod' -> 'sub'; None for 'pkg.grp.mod'."""
+    parts = name.split(".")
+    return parts[2] if len(parts) > 3 else None
 
 
 def _block_edges(
@@ -106,7 +131,7 @@ def _block_edges(
 
 
 def _merge_cycles(
-    blocks: dict[str, _Block], edges: set[tuple[str, str]], fan_in: Counter[str]
+    blocks: dict[str, _Block], edges: set[tuple[str, str]], degree: Counter[str]
 ) -> dict[str, _Block]:
     graph = nx.DiGraph()
     graph.add_nodes_from(sorted(blocks))
@@ -116,7 +141,7 @@ def _merge_cycles(
         if len(scc) == 1:
             merged[scc[0]] = blocks[scc[0]]
             continue
-        lead = min(scc, key=lambda k: (-sum(fan_in[m] for m in blocks[k].members), blocks[k].name, k))
+        lead = min(scc, key=lambda k: (-sum(degree[m] for m in blocks[k].members), blocks[k].name, k))
         merged[f"s:{scc[0]}"] = _Block(
             name=blocks[lead].name,
             members={m for k in scc for m in blocks[k].members},
@@ -164,13 +189,18 @@ def _absorb_private_helpers(
     return blocks
 
 
-def _unique_names(blocks: dict[str, _Block], fan_in: Counter[str]) -> dict[str, _Block]:
-    counts = Counter(b.name for b in blocks.values())
+def _unique_names(blocks: dict[str, _Block], degree: Counter[str]) -> dict[str, _Block]:
+    """Keep a clashing name on the biggest block; qualify the others with their lead module."""
+    by_name: dict[str, list[str]] = {}
     for key in sorted(blocks):
-        block = blocks[key]
-        if counts[block.name] > 1:
-            lead = min(block.members, key=lambda m: (-fan_in[m], m))
-            block.name = f"{block.name} ({lead})"
+        by_name.setdefault(blocks[key].name, []).append(key)
+    for name, keys in by_name.items():
+        if len(keys) < 2:
+            continue
+        keys.sort(key=lambda k: (-len(blocks[k].members), k))
+        for key in keys[1:]:
+            lead = min(blocks[key].members, key=lambda m: (-degree[m], m))
+            blocks[key].name = f"{name} ({lead})"
     return blocks
 
 
