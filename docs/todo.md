@@ -57,14 +57,16 @@ complete-ontology round all shipped. Pick from *Advanced backlog* or
   state-machine diagrams never grow off-page glyphs.
 - **Architecture atlas** ✓ — `Reflection.to_atlas()` /
   `to_atlas_model()` / `save_atlas()`: a deterministic, token-cheap
-  Markdown digest of a repo's modularization (packages, per-module
-  purpose + public symbols, dependency structure, layers, import
-  cycles, coupling hotspots) so an LLM can hold a holistic view without
-  reading the source. New `_reflection/metrics.py` (fan-in/out, cycles
-  via networkx SCC) + `_reflection/atlas.py`. Committed
-  `docs/reflection/atlas.md`. See [`issues/reflection.md`](issues/reflection.md) §M7.
-  Follow-up: Rust `pub fn` / `pub struct` / doc-comment extraction in
-  `parser_rust.py` to remove the atlas column degradation for Rust.
+  Markdown map of a repo's architecture (components + dependency tiers,
+  entry points, external systems, data models, env vars, spec
+  conformance, cycles, hotspots, documentation gaps) so an LLM can hold a
+  holistic view without reading the source. Optional `intent=` overlay for
+  purposes and patterns. Two bundled Claude Code skills (`sysatlas`,
+  `sysatlas-document`). Committed `docs/reflection/atlas.md` and
+  `intent.json`. See [`issues/reflection.md`](issues/reflection.md) §M7.
+  Follow-up: Rust parity for entry points / externals / models / env vars,
+  and Rust `pub fn` / `pub struct` / doc-comment extraction in
+  `parser_rust.py`.
 
 ## 0.4.0 — draw.io layers as a first-class concept
 

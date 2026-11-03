@@ -37,4 +37,3 @@ packages = ["sysatlas"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "sysatlas/LLM_GUIDE.md" = "sysatlas/LLM_GUIDE.md"
-"sysatlas/_skill/SKILL.md" = "sysatlas/_skill/SKILL.md"

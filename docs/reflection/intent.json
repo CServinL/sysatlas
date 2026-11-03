@@ -1,0 +1,149 @@
+{
+  "summary": "sysatlas is a Python library for architecture diagrams. Pydantic-backed builders describe a system, and a layout and routing engine renders it as interactive draw.io HTML. A reverse flow reads existing code and produces the same diagrams, plus a deterministic text atlas of the architecture. Only the names exported from the root package are public; modules that start with an underscore are private.",
+  "components": {
+    "_reflection": {
+      "purpose": "Reads a source tree without running it and turns it into diagrams and the architecture atlas: parser, hints, graph metrics, component clustering, spec check, intent merge, atlas model and Markdown output. Builds SystemMap and System objects but does not render them.",
+      "fingerprint": "0b6807b28679",
+      "patterns": [
+        "Deterministic generated artifact"
+      ]
+    },
+    "bpmn_map": {
+      "purpose": "Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline.",
+      "fingerprint": "d199f83311f6",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "class_map": {
+      "purpose": "Fluent builder for UML class diagrams. Uses the shared layered engine for layout.",
+      "fingerprint": "8838038effc9",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "er_map": {
+      "purpose": "Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout.",
+      "fingerprint": "754a468e7d95",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "sequence_map": {
+      "purpose": "Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline.",
+      "fingerprint": "5eaeb2a96191",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "state_map": {
+      "purpose": "Fluent builder for state machine diagrams. Uses the shared layered engine for layout.",
+      "fingerprint": "3199cd46226e",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "tree_map": {
+      "purpose": "Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline.",
+      "fingerprint": "8ef1159481f4",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "bpmn-pipeline": {
+      "purpose": "Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine.",
+      "fingerprint": "a44f757ed760",
+      "patterns": [
+        "Shared engine with specialized pipelines"
+      ]
+    },
+    "sequence-pipeline": {
+      "purpose": "Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layered engine.",
+      "fingerprint": "5cb5df21a4d9",
+      "patterns": [
+        "Shared engine with specialized pipelines"
+      ]
+    },
+    "tree-pipeline": {
+      "purpose": "Lays out tree diagrams and writes their mxGraph XML. Has its own layout; does not use the layered engine.",
+      "fingerprint": "4e736544126d",
+      "patterns": [
+        "Shared engine with specialized pipelines"
+      ]
+    },
+    "system": {
+      "purpose": "Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-view references. Builds on SystemMap.",
+      "fingerprint": "012406e4c239",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "system_map": {
+      "purpose": "Fluent builder for one architecture diagram. Hands the finished diagram to the layout and render engine.",
+      "fingerprint": "644a71641ff8",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "_trace_matrix": {
+      "purpose": "Renders trace links between components as an HTML matrix of sources by targets.",
+      "fingerprint": "e60e755a6b37"
+    },
+    "_render": {
+      "purpose": "The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on the vendored viewer script.",
+      "fingerprint": "b2d67fc40138",
+      "patterns": [
+        "Shared engine with specialized pipelines"
+      ]
+    },
+    "diagram-types": {
+      "purpose": "Pydantic schemas for each diagram kind: architecture, BPMN, ER, sequence, state machine, tree and UML class. Data only; no layout or rendering.",
+      "fingerprint": "cecd4451b700",
+      "patterns": [
+        "Fluent builder over a typed schema"
+      ]
+    },
+    "_vendor": {
+      "purpose": "Finds the draw.io viewer script, downloading and caching it when it is missing.",
+      "fingerprint": "8e76e0706907"
+    },
+    "cross-cutting": {
+      "purpose": "Schemas that apply across diagram kinds: ISO 42010 architecture description, trace links, quality attributes and the model-kind taxonomy.",
+      "fingerprint": "fe82c5904582"
+    }
+  },
+  "patterns": [
+    {
+      "name": "Fluent builder over a typed schema",
+      "description": "Each builder collects chained calls into a validated Pydantic model, which the engine then renders.",
+      "components": [
+        "system_map",
+        "system",
+        "bpmn_map",
+        "class_map",
+        "er_map",
+        "sequence_map",
+        "state_map",
+        "tree_map",
+        "diagram-types"
+      ]
+    },
+    {
+      "name": "Shared engine with specialized pipelines",
+      "description": "Architecture, state, ER and class diagrams go through one layered layout and routing engine. BPMN, sequence and tree diagrams have their own layout and render modules, and reuse only the shared XML and viewer writer.",
+      "components": [
+        "_render",
+        "bpmn-pipeline",
+        "sequence-pipeline",
+        "tree-pipeline"
+      ]
+    },
+    {
+      "name": "Deterministic generated artifact",
+      "description": "Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed.",
+      "components": [
+        "_reflection"
+      ]
+    }
+  ]
+}

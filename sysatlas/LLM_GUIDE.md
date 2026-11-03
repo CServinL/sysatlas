@@ -5,19 +5,21 @@ installed. This file tells you how to use it. Read all of it before
 writing or editing any sysatlas-related code.
 
 If you are a Claude Code session and `.claude/skills/sysatlas/` isn't
-already installed in this project, consider installing the bundled Skill
-instead — it covers the same ground and gets auto-discovered on future
-turns without a manual reminder. See `sysatlas.skill_path()` or the
-"Installing the sysatlas Skill" section of the README.
+already installed in this project, consider installing the bundled Skills
+instead — they cover the same ground and get auto-discovered on future
+turns without a manual reminder. See `sysatlas.skill_path("sysatlas")`,
+`sysatlas.skill_path("sysatlas-document")`, or the "Installing the sysatlas
+Skills" section of the README.
 
 ## Architecture atlas — read this first
 
 If this project commits an **architecture atlas** (default location
 `docs/reflection/atlas.md`), read it before exploring the source. It is a
-deterministic, token-cheap Markdown digest of how the repo is modularized —
-packages, each module's purpose and public symbols, the dependency structure,
-layering, import cycles, and coupling hotspots. It lets you hold a holistic
-view of the codebase without reading every file.
+deterministic, token-cheap Markdown map of the architecture: components and
+their dependency tiers, entry points, external systems, data models,
+environment variables, each module's purpose and public symbols, import
+cycles, and coupling hotspots. It lets you hold a holistic view of the
+codebase without reading every file.
 
 Regenerate it whenever you add, remove, or rename a module, class, or
 function:
@@ -25,8 +27,16 @@ function:
 ```python
 import sysatlas
 sysatlas.reflect("path/to/source/root").save_atlas("docs/reflection/atlas.md",
-                                                   title="…")
+                                                   title="…",
+                                                   intent="docs/reflection/intent.json")
 ```
+
+(Drop `intent=` if the project has no intent file.) The last section of the
+atlas, "Documentation gaps", lists missing docstrings and components with no
+recorded purpose. Fill them with the `sysatlas-document` skill, or by hand: write
+component purposes and architectural patterns into `intent.json`. The atlas
+marks that content as not generated. If the hints file declares an
+`architecture` spec, the atlas also reports where the code departs from it.
 
 The atlas mirrors how the code *is* organized; it says nothing about how it
 *should* be. If the project also has an app spec, read both and flag where
@@ -62,7 +72,7 @@ them. The canonical commands:
 ```python
 import sysatlas
 r = sysatlas.reflect("path/to/source/root")
-r.save_atlas("docs/reflection/atlas.md", title="…")   # holistic text digest
+r.save_atlas("docs/reflection/atlas.md", title="…")   # holistic text map
 m = r.to_system_map(title="…")
 m.save("docs/reflection/module-map.html")              # diagram
 ```
@@ -91,6 +101,7 @@ sysatlas.ClassMap       # UML class diagram
 sysatlas.BPMNMap        # BPMN process diagram
 sysatlas.reflect(path)  # reverse flow: code → Reflection → SystemMap
 sysatlas.llm_guide()    # returns this file as a string
+sysatlas.skill(name)    # bundled Claude Code skill text: "sysatlas" or "sysatlas-document"
 ```
 
 `Reflection` (returned by `reflect()` / `reflect_rust()`) exposes

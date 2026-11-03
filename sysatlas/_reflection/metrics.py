@@ -19,6 +19,7 @@ atlas.py so the cross-package rollup and the per-module group always agree."""
 
 
 class ModuleMetrics(BaseModel):
+    """Fan-in, fan-out and neighbours of one module."""
     model_config = ConfigDict(extra="forbid")
 
     name: str
@@ -32,6 +33,7 @@ class ModuleMetrics(BaseModel):
 
 
 class CrossPackageEdge(BaseModel):
+    """Imports from one group into another, rolled up with examples."""
     model_config = ConfigDict(extra="forbid")
 
     src: str
@@ -43,6 +45,7 @@ class CrossPackageEdge(BaseModel):
 
 
 class GraphMetrics(BaseModel):
+    """Metrics for the whole import graph: per-module numbers, cycles and cross-package edges."""
     model_config = ConfigDict(extra="forbid")
 
     node_count: int

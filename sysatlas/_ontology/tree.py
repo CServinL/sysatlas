@@ -13,6 +13,7 @@ NodeKind = Literal["root", "branch", "leaf"]
 
 
 class TreeNode(BaseModel):
+    """One node of a tree, identified by a unique name, with an optional display label."""
     model_config = ConfigDict(extra="allow")
     name: str                        # unique id
     label: str | None = None         # display text

@@ -4,100 +4,171 @@
 
 ## Overview
 
-- Modules: 43
-- Internal import edges: 59
+sysatlas is a Python library for architecture diagrams. Pydantic-backed builders describe a system, and a layout and routing engine renders it as interactive draw.io HTML. A reverse flow reads existing code and produces the same diagrams, plus a deterministic text atlas of the architecture. Only the names exported from the root package are public; modules that start with an underscore are private.
+
+- Modules: 49
+- Components: 17
+- Internal import edges: 67
 - Packages: 7
 - Import cycles: 2
 - Language: python
 
+## Components
+
+A component is a cluster of modules that acts as one unit: modules that import each other in a cycle, share a package, or serve a single caller. Tier 0 is what nothing else depends on.
+
+| component | tier | layer | modules | roles | purpose | depends on | external |
+|---|---|---|---|---|---|---|---|
+| `_reflection` | 0 | reflection | 15 (2244 loc) | logic×15 | Reads a source tree without running it and turns it into diagrams and the architecture atlas: parser, hints, graph metrics, component clust… | diagram-types, system, system_map | — |
+| `bpmn_map` | 0 | builders | 1 (74 loc) | logic×1 | Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline. | _render, bpmn-pipeline, diagram-types | — |
+| `class_map` | 0 | builders | 1 (196 loc) | logic×1 | Fluent builder for UML class diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
+| `er_map` | 0 | builders | 1 (156 loc) | logic×1 | Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
+| `sequence_map` | 0 | builders | 1 (77 loc) | logic×1 | Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline. | _render, diagram-types, sequence-pipeline | — |
+| `state_map` | 0 | builders | 1 (168 loc) | logic×1 | Fluent builder for state machine diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
+| `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
+| `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
+| `sequence-pipeline` | 1 | layout | 2 (224 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
+| `system` | 1 | builders | 1 (196 loc) | logic×1 | Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-v… | _render, _trace_matrix, cross-cutting, system_map | — |
+| `tree-pipeline` | 1 | layout | 2 (204 loc) | logic×2 | Lays out tree diagrams and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render | — |
+| `_trace_matrix` | 2 | render | 1 (109 loc) | logic×1 | Renders trace links between components as an HTML matrix of sources by targets. | cross-cutting | — |
+| `system_map` | 2 | builders | 1 (93 loc) | logic×1 | Fluent builder for one architecture diagram. Hands the finished diagram to the layout and render engine. | _render, diagram-types | — |
+| `_render` | 3 | layout | 6 (2270 loc) | logic×6 | The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on… | _vendor | — |
+| `diagram-types` | 3 | ontology | 7 (427 loc) | model×7 | Pydantic schemas for each diagram kind: architecture, BPMN, ER, sequence, state machine, tree and UML class. Data only; no layout or render… | cross-cutting | — |
+| `_vendor` | 4 | infra | 1 (31 loc) | logic×1 | Finds the draw.io viewer script, downloading and caching it when it is missing. | — | — |
+| `cross-cutting` | 4 | ontology | 5 (332 loc) | model×3, logic×1, support×1 | Schemas that apply across diagram kinds: ISO 42010 architecture description, trace links, quality attributes and the model-kind taxonomy. | — | — |
+
+## Component dependencies
+
+- **tier 0**: _reflection, bpmn_map, class_map, er_map, sequence_map, state_map, tree_map
+- **tier 1**: bpmn-pipeline, sequence-pipeline, system, tree-pipeline
+- **tier 2**: _trace_matrix, system_map
+- **tier 3**: _render, diagram-types
+- **tier 4**: _vendor, cross-cutting
+
+## Entry points
+
+_None detected._
+
+## External systems
+
+_No databases, network services, or queues detected._
+
+Other third-party libraries: `networkx`, `pydantic`, `tree_sitter`, `tree_sitter_rust`, `yaml`
+
+## Data models
+
+- **_reflection** (30): ArchitectureSpec, Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint, AtlasEnvVar, AtlasExternal, AtlasGaps, AtlasLayer, AtlasModels, … +18
+- **cross-cutting** (10): ArchitectureDescription, Concern, EntityRef, ModelKind, QualityAttribute, Stakeholder, TraceLink, TraceLinkSet, View, Viewpoint
+- **diagram-types** (30): Activation, Activity, Actor, ArchitectureDiagram, Attribute, BPMNDiagram, Class, ClassDiagram, Component, Connection, ERDiagram, Entity, … +18
+
+## Configuration
+
+_No environment variables read._
+
+## Architectural patterns
+
+_Written by hand or by an LLM from the intent overlay; not generated from imports._
+
+- **Deterministic generated artifact** — Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed. Components: _reflection.
+- **Fluent builder over a typed schema** — Each builder collects chained calls into a validated Pydantic model, which the engine then renders. Components: bpmn_map, class_map, diagram-types, er_map, sequence_map, state_map, system, system_map, tree_map.
+- **Shared engine with specialized pipelines** — Architecture, state, ER and class diagrams go through one layered layout and routing engine. BPMN, sequence and tree diagrams have their own layout and render modules, and reuse only the shared XML and viewer writer. Components: _render, bpmn-pipeline, sequence-pipeline, tree-pipeline.
+
 ## Layers
+
+_From the hints file or from module names; not derived from imports._
 
 - **render** (5): _bpmn_render, _render, _sequence_render, _trace_matrix, _tree_render
 - **layout** (8): _bpmn_layout, _connectors, _hub_layout, _layout, _place, _route, _sequence_layout, _tree_layout
 - **ontology** (12): architecture, bpmn, er, iso42010, model_kind, model_kinds, qualities, sequence, state_machine, trace, tree, uml_class
 - **builders** (8): bpmn_map, class_map, er_map, sequence_map, state_map, system, system_map, tree_map
-- **reflection** (9): atlas, hints, layers, merge, metrics, parser, parser_rust, reflection, resolve
+- **reflection** (15): atlas, atlas_render, components, external, hints, intent, layers, merge, metrics, parser, parser_rust, project, reflection, resolve, spec
 - **infra** (1): _vendor
 
 ## Packages
 
 ### (root) — 16 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `_connectors` | — | s | classify_edges() | 0 | 1 |
-| `_hub_layout` | Hub-and-spoke placement for read/write-loop architectures. | m | compute_hub_layout() | 1 | 1 |
-| `_layout` | — | xl | compute_layout(), finalize_routing() | 4 | 2 |
-| `_place` | — | l | neighbor_weights(), neighbors_by_strength(), refine_placement() | 0 | 1 |
-| `_render` | — | xl | build_xml(), copy_local_viewer(), render(), render_collection() | 3 | 12 |
-| `_route` | — | xl | compute_node_heights(), route_edges() | 0 | 1 |
-| `_trace_matrix` | Render a trace link set as an HTML matrix (sources × targets). | m | render_trace_matrix() | 1 | 1 |
-| `_vendor` | — | s | viewer_js() | 0 | 1 |
-| `bpmn_map` | Fluent builder for BPMN process diagrams. | s | BPMNMap | 3 | 0 |
-| `class_map` | Fluent builder for UML class diagrams. | m | ClassMap | 2 | 0 |
-| `er_map` | Fluent builder for Entity-Relationship diagrams. | m | ERMap | 2 | 0 |
-| `sequence_map` | Fluent builder for UML sequence diagrams. | m | SequenceMap | 3 | 0 |
-| `state_map` | Fluent builder for state machine diagrams. | m | StateMap | 2 | 0 |
-| `system` | Top-level fluent builder for a multi-view sysatlas project. | m | System | 5 | 1 |
-| `system_map` | — | m | SystemMap | 2 | 3 |
-| `tree_map` | Fluent builder for a tree diagram (org chart, mindmap, taxonomy, …). | s | TreeMap | 3 | 0 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `_connectors` | Split edges into directly routed ones and long-span ones drawn as off-page connectors. | logic | s | classify_edges() | 0 | 1 |
+| `_hub_layout` | Hub-and-spoke placement for read/write-loop architectures. | logic | m | compute_hub_layout() | 1 | 1 |
+| `_layout` | Layered (Sugiyama-style) node placement and final edge routing for architecture diagrams. | logic | xl | compute_layout(), finalize_routing() | 4 | 2 |
+| `_place` | Refine node positions inside each layer so strongly connected nodes sit close together. | logic | l | neighbor_weights(), neighbors_by_strength(), refine_placement() | 0 | 1 |
+| `_render` | Turn laid-out nodes, edges and groups into mxGraph XML and a self-contained viewer HTML p… | logic | xl | build_xml(), copy_local_viewer(), render(), render_collection() | 3 | 12 |
+| `_route` | Grid-based A* edge routing that avoids node interiors, favors straight runs and limits ov… | logic | xl | compute_node_heights(), route_edges() | 0 | 1 |
+| `_trace_matrix` | Render a trace link set as an HTML matrix (sources × targets). | logic | m | render_trace_matrix() | 1 | 1 |
+| `_vendor` | Locate or download the draw.io viewer script and cache it under the user's home directory. | logic | s | viewer_js() | 0 | 1 |
+| `bpmn_map` | Fluent builder for BPMN process diagrams. | logic | s | BPMNMap | 3 | 0 |
+| `class_map` | Fluent builder for UML class diagrams. | logic | m | ClassMap | 2 | 0 |
+| `er_map` | Fluent builder for Entity-Relationship diagrams. | logic | m | ERMap | 2 | 0 |
+| `sequence_map` | Fluent builder for UML sequence diagrams. | logic | m | SequenceMap | 3 | 0 |
+| `state_map` | Fluent builder for state machine diagrams. | logic | m | StateMap | 2 | 0 |
+| `system` | Top-level fluent builder for a multi-view sysatlas project. | logic | m | System | 5 | 1 |
+| `system_map` | Fluent builder for one architecture diagram (`SystemMap`): components, groups, connection… | logic | m | SystemMap | 2 | 3 |
+| `tree_map` | Fluent builder for a tree diagram (org chart, mindmap, taxonomy, …). | logic | s | TreeMap | 3 | 0 |
 
-### _reflection — 9 module(s)
+### _reflection — 15 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `atlas` | Deterministic Markdown "architecture atlas" from a Reflection. | l | Atlas, AtlasCrossPackage, AtlasCycle, AtlasLayer, AtlasModule, build_atlas(), build_atlas… | 2 | 1 |
-| `hints` | Load an optional sysatlas hints file from the scan root. | s | load_hints() | 1 | 1 |
-| `layers` | Heuristic: top-level package segment → architectural layer name. | s | infer_group(), infer_layer(), layer_rank() | 0 | 2 |
-| `merge` | Merge a user-authored 'annotation overlay' SystemMap onto reflected structure. | s | merge_overlay() | 2 | 1 |
-| `metrics` | Graph metrics over a kept module set: fan-in/out, import cycles, cross-package edges. | m | CrossPackageEdge, GraphMetrics, ModuleMetrics, compute_metrics() | 1 | 1 |
-| `parser` | AST-only scanner. Reads a Python source tree without importing it. | m | Module, ProjectGraph, scan() | 1 | 3 |
-| `parser_rust` | tree-sitter Rust scanner. Reads a Rust source tree without compiling it. | m | scan_rust() | 2 | 1 |
-| `reflection` | Reflection: code -> SystemMap. | m | Hints, Reflection, reflect(), reflect_rust() | 8 | 1 |
-| `resolve` | Decide whether an import target lives inside the scanned tree. | xs | resolve_import() | 0 | 2 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `atlas` | Deterministic "architecture atlas" model from a Reflection. | logic | xl | Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint… | 8 | 1 |
+| `atlas_render` | Markdown rendering of an Atlas. Pure function of the model; no I/O. | logic | l | render_markdown() | 0 | 1 |
+| `components` | Group modules into architectural components and order them by dependency. | logic | m | ComponentCore, ComponentEdge, ComponentGraph, compute_components() | 0 | 1 |
+| `external` | Which imports mean "the system talks to something outside itself". | logic | s | classify_external(), external_roots() | 0 | 2 |
+| `hints` | Load an optional sysatlas hints file from the scan root. | logic | s | load_hints() | 1 | 1 |
+| `intent` | The human / LLM-authored layer: what components are for and which patterns they follow. | logic | s | Intent, IntentComponent, IntentPattern, fingerprint(), load_intent() | 0 | 1 |
+| `layers` | Heuristic: top-level package segment → architectural layer name. | logic | s | infer_group(), infer_layer(), layer_rank() | 0 | 2 |
+| `merge` | Merge a user-authored 'annotation overlay' SystemMap onto reflected structure. | logic | s | merge_overlay() | 2 | 1 |
+| `metrics` | Graph metrics over a kept module set: fan-in/out, import cycles, cross-package edges. | logic | m | CrossPackageEdge, GraphMetrics, ModuleMetrics, compute_metrics() | 1 | 1 |
+| `parser` | AST-only scanner. Reads a Python source tree without importing it. | logic | l | Module, ProjectGraph, scan() | 2 | 3 |
+| `parser_rust` | tree-sitter Rust scanner. Reads a Rust source tree without compiling it. | logic | m | scan_rust() | 2 | 1 |
+| `project` | Project metadata that lives next to the source: console scripts from pyproject.toml. | logic | s | console_scripts() | 0 | 1 |
+| `reflection` | Reflection: code -> SystemMap. | logic | l | Hints, Reflection, reflect(), reflect_rust() | 9 | 1 |
+| `resolve` | Decide whether an import target lives inside the scanned tree. | logic | xs | resolve_import() | 0 | 2 |
+| `spec` | Intended architecture, declared by people, and a check of the code against it. | logic | m | ArchitectureSpec, Conformance, SpecComponent, SpecViolation, check_conformance() | 0 | 2 |
 
 ### bpmn-pipeline — 2 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `_bpmn_layout` | BPMN diagram layout. | m | compute_bpmn_layout(), node_size() | 1 | 1 |
-| `_bpmn_render` | Render a BPMNDiagram to draw.io / mxGraph XML. | m | build_bpmn_xml(), render_bpmn() | 2 | 1 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `_bpmn_layout` | BPMN diagram layout. | logic | m | compute_bpmn_layout(), node_size() | 1 | 1 |
+| `_bpmn_render` | Render a BPMNDiagram to draw.io / mxGraph XML. | logic | m | build_bpmn_xml(), render_bpmn() | 2 | 1 |
 
 ### cross-cutting — 5 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `iso42010` | ISO/IEC/IEEE 42010:2011 meta-ontology. | m | ArchitectureDescription, Concern, Stakeholder, View, Viewpoint | 2 | 1 |
-| `model_kind` | ModelKind — taxonomy entry that names a *usage* of an Ontology. | s | ModelKind | 0 | 2 |
-| `model_kinds` | Bundled taxonomy of ModelKinds backed by sysatlas's built-in ontologies. | s | — | 1 | 1 |
-| `qualities` | Quality attributes per ISO/IEC 25010:2011 (Product Quality Model). | s | QualityAttribute | 0 | 1 |
-| `trace` | Trace links between entities in different models. | m | EntityRef, TraceLink, TraceLinkSet, resolve_links() | 0 | 2 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `iso42010` | ISO/IEC/IEEE 42010:2011 meta-ontology. | model | m | ArchitectureDescription, Concern, Stakeholder, View, Viewpoint | 2 | 1 |
+| `model_kind` | ModelKind — taxonomy entry that names a *usage* of an Ontology. | model | s | ModelKind | 0 | 2 |
+| `model_kinds` | Bundled taxonomy of ModelKinds backed by sysatlas's built-in ontologies. | support | s | — | 1 | 1 |
+| `qualities` | Quality attributes per ISO/IEC 25010:2011 (Product Quality Model). | model | s | QualityAttribute | 0 | 1 |
+| `trace` | Trace links between entities in different models. | logic | m | EntityRef, TraceLink, TraceLinkSet, resolve_links() | 0 | 2 |
 
 ### diagram-types — 7 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `architecture` | Ontology for layered system-architecture diagrams (C4-container style). | m | ArchitectureDiagram, Component, Connection, Group, Layer | 1 | 2 |
-| `bpmn` | Ontology for BPMN process diagrams (simplified subset). | m | Activity, BPMNDiagram, Event, Flow, Gateway, Lane, Pool | 0 | 2 |
-| `er` | Ontology for Entity-Relationship diagrams. | s | Attribute, ERDiagram, Entity, Relationship | 0 | 1 |
-| `sequence` | Ontology for UML sequence diagrams. | s | Activation, Actor, Frame, Message, SequenceDiagram | 0 | 1 |
-| `state_machine` | Ontology for state machine / state chart diagrams. | s | State, StateDiagram, Transition | 0 | 1 |
-| `tree` | Ontology for tree-structured diagrams: org charts, mind maps, file trees, | s | TreeDiagram, TreeNode | 0 | 1 |
-| `uml_class` | Ontology for UML class diagrams. | s | Attribute, Class, ClassDiagram, Method, Relation | 0 | 1 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `architecture` | Ontology for layered system-architecture diagrams (C4-container style). | model | m | ArchitectureDiagram, Component, Connection, Group, Layer | 1 | 2 |
+| `bpmn` | Ontology for BPMN process diagrams (simplified subset). | model | m | Activity, BPMNDiagram, Event, Flow, Gateway, Lane, Pool | 0 | 2 |
+| `er` | Ontology for Entity-Relationship diagrams. | model | s | Attribute, ERDiagram, Entity, Relationship | 0 | 1 |
+| `sequence` | Ontology for UML sequence diagrams. | model | s | Activation, Actor, Frame, Message, SequenceDiagram | 0 | 1 |
+| `state_machine` | Ontology for state machine / state chart diagrams. | model | s | State, StateDiagram, Transition | 0 | 1 |
+| `tree` | Ontology for tree-structured diagrams: org charts, mind maps, file trees, | model | s | TreeDiagram, TreeNode | 0 | 1 |
+| `uml_class` | Ontology for UML class diagrams. | model | s | Attribute, Class, ClassDiagram, Method, Relation | 0 | 1 |
 
 ### sequence-pipeline — 2 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `_sequence_layout` | Sequence-diagram layout. | s | compute_sequence_layout() | 0 | 1 |
-| `_sequence_render` | Render a SequenceDiagram to draw.io / mxGraph XML. | m | build_sequence_xml(), render_sequence() | 2 | 1 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `_sequence_layout` | Sequence-diagram layout. | logic | s | compute_sequence_layout() | 0 | 1 |
+| `_sequence_render` | Render a SequenceDiagram to draw.io / mxGraph XML. | logic | m | build_sequence_xml(), render_sequence() | 2 | 1 |
 
 ### tree-pipeline — 2 module(s)
 
-| module | purpose | size | symbols | out | in |
-|---|---|---|---|---|---|
-| `_tree_layout` | Top-down tree layout (simplified Reingold-Tilford). | m | compute_tree_layout() | 0 | 1 |
-| `_tree_render` | Render a TreeDiagram to draw.io / mxGraph XML. | m | build_tree_xml(), render_tree() | 2 | 1 |
+| module | purpose | role | size | symbols | out | in |
+|---|---|---|---|---|---|---|
+| `_tree_layout` | Top-down tree layout (simplified Reingold-Tilford). | logic | m | compute_tree_layout() | 0 | 1 |
+| `_tree_render` | Render a TreeDiagram to draw.io / mxGraph XML. | logic | m | build_tree_xml(), render_tree() | 2 | 1 |
 
 ## Dependency structure
 
@@ -119,15 +190,15 @@
 Module adjacency (fan-in + fan-out ≥ 3):
 
 - **_render** → _hub_layout, _layout, _vendor
-- **reflection** → atlas, hints, layers, merge, parser, parser_rust, system, system_map
+- **reflection** → atlas, hints, layers, merge, parser, parser_rust, spec, system, system_map
+- **atlas** → atlas_render, components, external, intent, layers, metrics, project, spec
 - **_layout** → _connectors, _place, _render, _route
 - **system** → iso42010, trace, _render, _trace_matrix, system_map
+- **parser** → external, resolve
 - **system_map** → architecture, _render
-- **parser** → resolve
 - **_bpmn_render** → _bpmn_layout, _render
 - **architecture** → qualities
 - **iso42010** → model_kind, model_kinds
-- **atlas** → layers, metrics
 - **merge** → architecture, system_map
 - **parser_rust** → parser, resolve
 - **_sequence_render** → _render, _sequence_layout
@@ -152,15 +223,15 @@ Module adjacency (fan-in + fan-out ≥ 3):
 | module | fan-in | fan-out |
 |---|---|---|
 | `_render` | 12 | 3 |
-| `reflection` | 1 | 8 |
+| `reflection` | 1 | 9 |
+| `atlas` | 1 | 8 |
 | `_layout` | 2 | 4 |
 | `system` | 1 | 5 |
+| `parser` | 3 | 2 |
 | `system_map` | 3 | 2 |
-| `parser` | 3 | 1 |
 | `_bpmn_render` | 1 | 2 |
 | `architecture` | 2 | 1 |
 | `iso42010` | 1 | 2 |
-| `atlas` | 1 | 2 |
 
 ## Public API surface
 
@@ -179,3 +250,9 @@ Module adjacency (fan-in + fan-out ≥ 3):
 - `llm_guide_path`
 - `skill`
 - `skill_path`
+
+## Documentation gaps
+
+_What still needs to be written down. The sysatlas-document skill closes these._
+
+_None._

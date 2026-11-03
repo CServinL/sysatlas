@@ -40,7 +40,7 @@ __all__ = [
 __version__ = "0.3.4"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
-_SKILL = Path(__file__).parent / "_skill" / "SKILL.md"
+_SKILLS = Path(__file__).parent / "_skill"
 
 
 def llm_guide() -> str:
@@ -53,11 +53,22 @@ def llm_guide_path() -> str:
     return str(_LLM_GUIDE)
 
 
-def skill() -> str:
-    """Return the bundled Claude Code Skill (SKILL.md) as a markdown string."""
-    return _SKILL.read_text(encoding="utf-8")
+def _skill_file(name: str) -> Path:
+    available = sorted(p.parent.name for p in _SKILLS.glob("*/SKILL.md"))
+    if name not in available:
+        raise ValueError(f"unknown skill {name!r}; available: {', '.join(available)}")
+    return _SKILLS / name / "SKILL.md"
 
 
-def skill_path() -> str:
-    """Return the absolute path of the bundled Claude Code Skill file."""
-    return str(_SKILL)
+def skill(name: str = "sysatlas") -> str:
+    """Return a bundled Claude Code Skill (SKILL.md) as a markdown string.
+
+    Bundled skills: "sysatlas" (how to use the library) and "sysatlas-document"
+    (fill the atlas's documentation gaps).
+    """
+    return _skill_file(name).read_text(encoding="utf-8")
+
+
+def skill_path(name: str = "sysatlas") -> str:
+    """Return the absolute path of a bundled Claude Code Skill file."""
+    return str(_skill_file(name))

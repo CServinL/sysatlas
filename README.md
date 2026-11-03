@@ -44,10 +44,12 @@ r = sysatlas.reflect("src/")
 m = r.to_system_map(title="src internals")
 m.save("docs/reflection/module-map.html")
 
-# …or a deterministic, token-cheap text digest of the modularization —
-# packages, per-module purpose, dependency structure, cycles, hotspots —
-# for an LLM to hold a holistic view without reading the source:
-r.save_atlas("docs/reflection/atlas.md", title="src")
+# …or a deterministic, token-cheap text map of the architecture —
+# components and their dependency tiers, entry points, external systems,
+# data models, config, cycles, hotspots — for an LLM to hold a holistic
+# view without reading the source:
+r.save_atlas("docs/reflection/atlas.md", title="src",
+             intent="docs/reflection/intent.json")   # optional, see below
 
 # Rust crate  (pip install 'sysatlas[reflect-rust]')
 r = sysatlas.reflect_rust("my-crate/")
@@ -64,9 +66,24 @@ Drift between intent and reality becomes visible instead of silent.
 #### What the atlas is for
 
 `atlas.md` is a **mirror of how the code is actually organized** — generated,
-never hand-written, so it cannot drift from the source. It describes
-structure only (packages, modules, dependencies, cycles, hotspots), not
-intent or behavior.
+never hand-written, so it cannot drift from the source. It maps:
+
+- **Components** — clusters of modules that act as one unit (import cycles,
+  shared packages, helpers with a single caller), ordered into dependency tiers.
+- **Entry points** — `__main__` guards, `[project.scripts]`, web routes, CLI
+  commands, background tasks.
+- **External systems** — databases, HTTP APIs, queues, cloud and model APIs,
+  inferred from imports.
+- **Data models**, **environment variables**, import cycles, coupling hotspots.
+- **Conformance** — if the hints file (`sysatlas.json`) declares an
+  `architecture` (planned components and which may depend on which), the atlas
+  reports every dependency the plan does not allow.
+
+Imports cannot show what a component is *for*. That part lives in an optional
+`intent.json` (summary, component purposes, architectural patterns), written by
+a person or by an LLM with the `sysatlas-document` skill, merged into the atlas
+and marked as not generated. Each entry carries a fingerprint of the component's
+public symbols, so the atlas flags an entry as stale when the code changes shape.
 
 Among its use cases:
 
@@ -111,14 +128,21 @@ The guide tells the assistant exactly which symbols are public, which
 fields the ontology accepts, and that diagrams are part of the
 deliverable — not an afterthought.
 
-### Installing the sysatlas Skill (Claude Code)
+### Installing the sysatlas Skills (Claude Code)
 
-sysatlas ships a Claude Code Skill so Claude auto-discovers how to use it —
-no manual reminder needed. Ask your assistant to install it once per project:
+sysatlas ships two Claude Code Skills so Claude auto-discovers how to use it —
+no manual reminder needed:
 
-> Install the sysatlas skill: copy the file at
-> `python -c "import sysatlas; print(sysatlas.skill_path())"` to
-> `.claude/skills/sysatlas/SKILL.md` in this project.
+- `sysatlas` — how to use the library; read the atlas first; regenerate after
+  structural changes.
+- `sysatlas-document` — fill the atlas's "Documentation gaps": write missing
+  docstrings, component purposes and architectural patterns.
+
+Ask your assistant to install them once per project:
+
+> Install the sysatlas skills: for each name in `sysatlas`, `sysatlas-document`,
+> copy the file at `python -c "import sysatlas; print(sysatlas.skill_path('NAME'))"`
+> to `.claude/skills/NAME/SKILL.md` in this project.
 
 ## Where to look
 

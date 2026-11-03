@@ -41,11 +41,17 @@ directions:
 4. **Reflection** — `reflect()` / `reflect_rust()` read Python and Rust
    source statically (never executing it) and produce a `SystemMap`, a
    `System`, or an architecture atlas.
-5. **Architecture atlas** — a deterministic, bounded Markdown digest of how
-   a repo is modularized, for orientation, review, and plan-versus-reality
-   comparison against a spec.
-6. **LLM support** — a bundled usage guide (`llm_guide()`) and a Claude Code
-   skill (`skill()`), shipped inside the package.
+5. **Architecture atlas** — a deterministic, bounded Markdown map of a
+   repo's architecture: components and dependency tiers, entry points,
+   external systems, data models, configuration, cycles and hotspots. It
+   reports where the code departs from a declared architecture spec, and
+   lists what still needs documenting.
+6. **Intent overlay** — a hand- or LLM-written JSON file with component
+   purposes and architectural patterns, merged into the atlas and marked as
+   not generated. Fingerprints flag entries that the code has outgrown.
+7. **LLM support** — a bundled usage guide (`llm_guide()`) and two Claude Code
+   skills (`skill("sysatlas")`, `skill("sysatlas-document")`), shipped inside
+   the package.
 
 ## 4. Principles
 
@@ -71,9 +77,9 @@ Set out in [`design-principles.md`](design-principles.md). In short:
 ## 6. Non-goals
 
 - Large "everything on one canvas" diagrams. Use another tool for those.
-- Describing runtime behavior, requirements, or intent from code. Reflection
+- Deriving runtime behavior, requirements, or intent from code. Reflection
   reports structure only; the *why* comes from this spec and the
-  human-authored overlay.
+  human-authored intent overlay.
 - Running or importing the code it analyzes.
 
 ## 7. Open items

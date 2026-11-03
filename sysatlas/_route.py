@@ -1,3 +1,5 @@
+"""Grid-based A* edge routing that avoids node interiors, favors straight runs and limits overlaps.
+"""
 from __future__ import annotations
 
 import heapq

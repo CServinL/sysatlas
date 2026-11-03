@@ -47,6 +47,12 @@
     "sysatlas._reflection.merge": "reflection",
     "sysatlas._reflection.metrics": "reflection",
     "sysatlas._reflection.atlas": "reflection",
+    "sysatlas._reflection.atlas_render": "reflection",
+    "sysatlas._reflection.components": "reflection",
+    "sysatlas._reflection.external": "reflection",
+    "sysatlas._reflection.intent": "reflection",
+    "sysatlas._reflection.project": "reflection",
+    "sysatlas._reflection.spec": "reflection",
 
     "sysatlas._vendor": "infra"
   },

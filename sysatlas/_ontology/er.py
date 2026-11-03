@@ -11,6 +11,7 @@ Cardinality = Literal["1", "0..1", "*", "1..*"]
 
 
 class Attribute(BaseModel):
+    """A column of an entity: name, type and a primary-key marker."""
     model_config = ConfigDict(extra="forbid")
     name: str
     type: str | None = None       # e.g. "varchar(64)", "int"
@@ -39,6 +40,7 @@ class Relationship(BaseModel):
 
 
 class ERDiagram(BaseModel):
+    """An entity-relationship diagram: entities and the relationships between them."""
     model_config = ConfigDict(extra="forbid")
     title: str = ""
     entities: dict[str, Entity] = Field(default_factory=dict)

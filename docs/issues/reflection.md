@@ -82,7 +82,13 @@ sysatlas/
     ├── layers.py          — heuristic + hints application; canonical LAYER_ORDER
     ├── hints.py           — sysatlas.json / sysatlas.yaml loader
     ├── metrics.py         — fan-in/out, import cycles, cross-package rollup
-    ├── atlas.py           — deterministic Markdown architecture atlas + Atlas model
+    ├── atlas.py           — Atlas model + builder
+    ├── atlas_render.py    — Atlas → deterministic Markdown
+    ├── components.py      — module clustering into components + dependency tiers
+    ├── external.py        — import name → external system kind
+    ├── project.py         — [project.scripts] from pyproject.toml
+    ├── spec.py            — planned architecture + conformance check
+    ├── intent.py          — intent overlay + staleness fingerprint
     └── merge.py           — round-trip merge with a blueprint SystemMap
 ```
 
@@ -124,7 +130,7 @@ invoke.
 | 4 | Round-trip merge (`merge.py`) | ✅ done | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
 | 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html` via `to_system()` (multi-view, no complexity warning); README table updated. |
 | 6 | Class granularity (`granularity="class"`) | ⏸ deferred | Optional follow-up; not in this PR. |
-| 7 | Architecture atlas (`Reflection.to_atlas()` / `to_atlas_model()` / `save_atlas()`) | ✅ done | Deterministic Markdown digest of the modularization (packages, per-module purpose + public symbols, dependency structure, layers, import cycles, coupling hotspots). Byte-identical across `PYTHONHASHSEED`. Structured `Atlas` model behind it (JSON). Rust degrades gracefully (no purpose/symbol columns). Committed `docs/reflection/atlas.md` for sysatlas itself, regen via `python docs/reflection/atlas.py`. |
+| 7 | Architecture atlas (`Reflection.to_atlas()` / `to_atlas_model()` / `save_atlas()`) | ✅ done | Deterministic Markdown map of the architecture: components (cycles merged, single-caller helpers absorbed, capped at 10 modules) with dependency tiers; entry points (main guard, `[project.scripts]`, routes, CLI, tasks); external systems from imports; data models; env vars; spec conformance when the hints file has `architecture`; per-module digest, cycles, hotspots; "Documentation gaps". Optional `intent=` overlay (purposes, patterns, fingerprint staleness). Byte-identical across `PYTHONHASHSEED`. Structured `Atlas` model behind it (JSON). Rust degrades gracefully (module names, size and imports only). Two bundled skills: `sysatlas` and `sysatlas-document`. Committed `docs/reflection/atlas.md` + `intent.json` for sysatlas itself, regen via `python docs/reflection/atlas.py`. |
 
 ## Extras landed on the same branch (post-M5)
 
@@ -179,6 +185,15 @@ the feature in anger:
   structural fields today; `pub fn` / `pub struct` / `pub enum` / `pub trait`
   and `///` / `//!` docs would remove the atlas column degradation. See
   `# TODO(atlas):` in `parser_rust.py`.
+- **Rust parity for the architecture facts** — entry points (`fn main`, `[[bin]]`),
+  external crates (`use` of non-`crate::` paths), data models (`#[derive(Serialize)]`),
+  and env reads (`std::env::var`) are Python-only today.
+- **More external-system names** — `external.py` is a fixed table; `urllib` is
+  not classified because its top-level name also covers pure URL parsing.
+- **Component clustering is a heuristic** — it reads import structure only, so a
+  flat package of unrelated modules with no imports between them stays one
+  component per module. `intent.json` and the `architecture` spec are the
+  corrective for that.
 - **Class-granularity atlas rows** — pairs with milestone 6.
 - **Rust `main.rs` + `lib.rs` both map to `crate`** — `parser_rust._module_name`
   collapses them to one dotted name; a crate with both (common for Tauri apps)

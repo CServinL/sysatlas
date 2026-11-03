@@ -32,6 +32,7 @@ class Transition(BaseModel):
 
 
 class StateDiagram(BaseModel):
+    """A state machine diagram: states and the transitions between them."""
     model_config = ConfigDict(extra="forbid")
     title: str = ""
     states: dict[str, State] = Field(default_factory=dict)

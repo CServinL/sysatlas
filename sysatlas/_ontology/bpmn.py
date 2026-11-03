@@ -28,6 +28,7 @@ class Lane(BaseModel):
 
 
 class Event(BaseModel):
+    """A BPMN event: start, end, intermediate, timer, message or error."""
     model_config = ConfigDict(extra="allow")
     name: str
     label: str | None = None
@@ -64,6 +65,7 @@ class Flow(BaseModel):
 
 
 class BPMNDiagram(BaseModel):
+    """A BPMN process diagram: pools, lanes, nodes and sequence flows."""
     model_config = ConfigDict(extra="forbid")
     title: str = ""
     pools: dict[str, Pool] = Field(default_factory=dict)

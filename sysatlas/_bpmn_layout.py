@@ -23,6 +23,7 @@ GATEWAY_W = 44
 
 
 def node_size(kind: str) -> tuple[int, int]:
+    """Width and height in pixels of a BPMN node of the given kind (event, gateway or activity)."""
     if kind in ("start", "end", "intermediate", "timer", "message", "error"):
         return EVENT_R * 2, EVENT_R * 2
     if kind in ("exclusive", "parallel", "inclusive", "event_based"):

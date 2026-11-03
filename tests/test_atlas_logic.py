@@ -169,8 +169,8 @@ class Symbols(unittest.TestCase):
         root = _tree({
             "a.py": "class Foo:\n    pass\n\n\ndef bar():\n    pass\n",
         })
-        atlas = _reflect(root).to_atlas()
-        row = next(line for line in atlas.splitlines() if "`a`" in line)
+        packages = _reflect(root).to_atlas().split("## Packages", 1)[1]
+        row = next(line for line in packages.splitlines() if "`a`" in line)
         self.assertIn("Foo", row)
         self.assertIn("bar()", row)
 

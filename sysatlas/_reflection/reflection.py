@@ -16,10 +16,12 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sysatlas._reflection.layers import infer_group, infer_layer, layer_rank
 from sysatlas._reflection.parser import ProjectGraph, scan
+from sysatlas._reflection.spec import ArchitectureSpec
 from sysatlas.system_map import SystemMap
 
 if TYPE_CHECKING:
     from sysatlas._reflection.atlas import Atlas
+    from sysatlas._reflection.intent import Intent
 
 
 class Hints(BaseModel):
@@ -30,6 +32,8 @@ class Hints(BaseModel):
     layer: dict[str, str] = Field(default_factory=dict)
     group: dict[str, str] = Field(default_factory=dict)
     rename: dict[str, str] = Field(default_factory=dict)
+    architecture: ArchitectureSpec | None = None
+    """Intended components and allowed dependencies; the atlas reports where the code departs from it."""
 
 
 class Reflection:
@@ -59,7 +63,7 @@ class Reflection:
         kept = []
         for m in self._graph.modules:
             rel = str(Path(m.path).relative_to(root)) if Path(m.path).is_relative_to(root) else m.path
-            if any(fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(m.name, pat) for pat in excludes):
+            if any(fnmatch.fnmatchcase(rel, pat) or fnmatch.fnmatchcase(m.name, pat) for pat in excludes):
                 continue
             kept.append(m)
         return kept
@@ -125,25 +129,48 @@ class Reflection:
             )
         return m
 
-    def to_atlas(self, title: str = "", *, max_modules: int = 80) -> str:
+    def to_atlas(
+        self,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> str:
         """Return a deterministic Markdown "architecture atlas" of the scanned tree.
 
-        A bounded, token-cheap, diffable digest of how the repo is modularized —
-        packages, per-module purpose and public symbols, dependency structure,
-        layering, import cycles, coupling hotspots. Same source tree → identical
-        output. For the structured form use `to_atlas_model()`.
+        A bounded, token-cheap, diffable map of the architecture: components and
+        their dependency tiers, entry points, external systems, data models,
+        configuration, import cycles, and the per-module digest. Same source
+        tree → identical output. `intent` is an optional JSON file (or dict)
+        with human-written component purposes and patterns, merged in and
+        marked as not generated. If the hints file declares an `architecture`
+        spec, conformance with it is reported. For the structured form use
+        `to_atlas_model()`.
         """
         from sysatlas._reflection.atlas import build_atlas
-        return build_atlas(self, title, max_modules=max_modules)
+        return build_atlas(self, title, max_modules=max_modules, intent=intent)
 
-    def to_atlas_model(self, title: str = "", *, max_modules: int = 80) -> "Atlas":
+    def to_atlas_model(
+        self,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> "Atlas":
         """Structured `Atlas` behind `to_atlas()`; JSON via `.model_dump_json()`."""
         from sysatlas._reflection.atlas import build_atlas_model
-        return build_atlas_model(self, title, max_modules=max_modules)
+        return build_atlas_model(self, title, max_modules=max_modules, intent=intent)
 
-    def save_atlas(self, path, title: str = "", *, max_modules: int = 80) -> str:
+    def save_atlas(
+        self,
+        path,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> str:
         """Write the Markdown atlas to `path` and return it."""
-        text = self.to_atlas(title, max_modules=max_modules)
+        text = self.to_atlas(title, max_modules=max_modules, intent=intent)
         Path(path).write_text(text, encoding="utf-8")
         return text
 

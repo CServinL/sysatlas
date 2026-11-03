@@ -1,3 +1,5 @@
+"""Split edges into directly routed ones and long-span ones drawn as off-page connectors.
+"""
 from __future__ import annotations
 
 LONG_LAYER_THRESHOLD = 3   # edges spanning >= this many ranks become connectors

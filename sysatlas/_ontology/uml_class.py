@@ -13,6 +13,7 @@ RelationKind = Literal["inheritance", "implementation", "composition", "aggregat
 
 
 class Attribute(BaseModel):
+    """A field of a UML class."""
     model_config = ConfigDict(extra="forbid")
     name: str
     type: str | None = None
@@ -21,6 +22,7 @@ class Attribute(BaseModel):
 
 
 class Method(BaseModel):
+    """A method of a UML class."""
     model_config = ConfigDict(extra="forbid")
     name: str
     return_type: str | None = None
@@ -52,6 +54,7 @@ class Relation(BaseModel):
 
 
 class ClassDiagram(BaseModel):
+    """A UML class diagram: classes and the relationships between them."""
     model_config = ConfigDict(extra="forbid")
     title: str = ""
     classes: dict[str, Class] = Field(default_factory=dict)

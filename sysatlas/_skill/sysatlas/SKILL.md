@@ -15,10 +15,18 @@ diagram types.
 
 If this project commits an architecture atlas (default location
 `docs/reflection/atlas.md`), read it **before** exploring source. It's a
-deterministic, token-cheap Markdown digest of the repo's modularization —
-packages, each module's purpose and public symbols, dependency structure,
-layering, import cycles, coupling hotspots. It gives a holistic view
-without reading every file.
+deterministic, token-cheap Markdown map of the repo's architecture:
+components and their dependency tiers, entry points (routes, CLI commands,
+tasks, scripts), external systems (databases, APIs, queues), data models,
+environment variables, per-module purpose and symbols, import cycles,
+coupling hotspots, and — if the hints file declares an `architecture` spec —
+whether the code conforms to it. It gives a holistic view without reading
+every file.
+
+The atlas shows structure only. It does not say what a component is for; that
+comes from `docs/reflection/intent.json`, which is hand- or LLM-written and
+marked as such. When the atlas lists "Documentation gaps", use the
+`sysatlas-document` skill to fill them.
 
 ## Forward vs. backward flow
 
@@ -60,7 +68,8 @@ user's:
 ```python
 import sysatlas
 r = sysatlas.reflect("path/to/source/root")
-r.save_atlas("docs/reflection/atlas.md", title="…")   # holistic text digest
+r.save_atlas("docs/reflection/atlas.md", title="…",   # holistic text map
+             intent="docs/reflection/intent.json")     # omit if no intent file
 m = r.to_system_map(title="…")
 m.save("docs/reflection/module-map.html")               # diagram
 ```
