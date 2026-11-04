@@ -28,6 +28,7 @@ FACADE_LOC_PER_OUT = 40
 REGISTRY_MIN_FAN_IN = 2
 MIN_COMMAND_ENTRIES = 2
 _EVIDENCE_ITEMS = 5
+_IMPLEMENTERS_SHOWN = 8
 _PIPELINES_SHOWN = 3
 _STORE_SUFFIXES = ("Repository", "Repo", "Store", "DAO", "Dao")
 _PUBLISH = frozenset({"publish", "publish_event"})
@@ -170,7 +171,9 @@ def _interfaces(
             continue
         base_mod = by_name.get(key[0])
         label = f"{key[1]} ({base_mod.label if base_mod else key[0]})"
-        line = f"{label}: {', '.join(sorted(names[key]))}"
+        shown = sorted(names[key])
+        more = f", … +{len(shown) - _IMPLEMENTERS_SHOWN}" if len(shown) > _IMPLEMENTERS_SHOWN else ""
+        line = f"{label}: {', '.join(shown[:_IMPLEMENTERS_SHOWN])}{more}"
         touching = {m.name for m in group if _systems(m)}
         core_clean = base_mod is not None and not _systems(base_mod)
         comps = {m.component for m in group} | ({base_mod.component} if base_mod else set())

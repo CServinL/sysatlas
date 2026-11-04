@@ -280,7 +280,12 @@ def build_atlas_model(
     names = sorted(m.name for m in kept)
     edges = {(m.name, d) for m in kept for d in mm[m.name].internal_deps}
     cgraph = compute_components(
-        names, edges, reflection._group_for, reflection._layer_for, lambda n: label_of[n]
+        names,
+        edges,
+        reflection._group_for,
+        reflection._layer_for,
+        lambda n: label_of[n],
+        lambda n: n in reflection.hints.group,
     )
     scripts = console_scripts(root_path)
 
@@ -582,29 +587,66 @@ def _build_cycles(
     return out
 
 
+def _root_init(root_path: Path) -> Path | None:
+    """The `__init__.py` that defines the public API.
+
+    The scan root's own, or, when the root is only a container (`src/`, or a
+    checkout `pkg/` holding `pkg/pkg/`), the one package directly inside it.
+    Several packages are ambiguous, so none is chosen.
+    """
+    own = root_path / "__init__.py"
+    if own.is_file():
+        return own
+    inside = sorted(p / "__init__.py" for p in root_path.iterdir() if (p / "__init__.py").is_file())
+    return inside[0] if len(inside) == 1 else None
+
+
+def _string_items(value: ast.expr | None) -> list[str]:
+    """String literals of a list / tuple expression, or of `a + b` over such expressions."""
+    if isinstance(value, (ast.List, ast.Tuple)):
+        return [
+            el.value for el in value.elts
+            if isinstance(el, ast.Constant) and isinstance(el.value, str)
+        ]
+    if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
+        return _string_items(value.left) + _string_items(value.right)
+    if isinstance(value, ast.Constant) and isinstance(value.value, str):
+        return [value.value]
+    return []
+
+
+def _is_all(node: ast.expr) -> bool:
+    return isinstance(node, ast.Name) and node.id == "__all__"
+
+
 def _public_api(root_path: Path) -> list[str]:
-    init = root_path / "__init__.py"
-    if not init.is_file():
+    """Names in `__all__`, in order, without duplicates.
+
+    Follows `__all__ = [...]` (also annotated, or `a + b`), `__all__ += [...]`,
+    `__all__.extend([...])` and `__all__.append("x")` at module level.
+    """
+    init = _root_init(root_path)
+    if init is None:
         return []
     try:
         tree = ast.parse(init.read_text(encoding="utf-8", errors="replace"))
     except (SyntaxError, ValueError):
         return []
+    names: list[str] = []
     for node in tree.body:
-        if isinstance(node, ast.Assign):
-            if not any(isinstance(t, ast.Name) and t.id == "__all__" for t in node.targets):
-                continue
-            value = node.value
-        elif isinstance(node, ast.AnnAssign):
-            if not (isinstance(node.target, ast.Name) and node.target.id == "__all__"):
-                continue
-            value = node.value
-        else:
-            continue
-        if isinstance(value, (ast.List, ast.Tuple)):
-            return [
-                el.value
-                for el in value.elts
-                if isinstance(el, ast.Constant) and isinstance(el.value, str)
-            ]
-    return []
+        if isinstance(node, ast.Assign) and any(_is_all(t) for t in node.targets):
+            names = _string_items(node.value)
+        elif isinstance(node, ast.AnnAssign) and _is_all(node.target) and node.value is not None:
+            names = _string_items(node.value)
+        elif isinstance(node, ast.AugAssign) and _is_all(node.target) and isinstance(node.op, ast.Add):
+            names += _string_items(node.value)
+        elif (
+            isinstance(node, ast.Expr)
+            and isinstance(node.value, ast.Call)
+            and isinstance(node.value.func, ast.Attribute)
+            and _is_all(node.value.func.value)
+            and node.value.func.attr in ("extend", "append")
+        ):
+            for arg in node.value.args:
+                names += _string_items(arg)
+    return list(dict.fromkeys(names))

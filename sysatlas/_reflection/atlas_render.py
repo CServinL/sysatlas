@@ -16,6 +16,7 @@ _EXTERNAL_ROWS = 40
 _MODEL_NAMES_PER_COMPONENT = 12
 _ENV_ROWS = 40
 _GAP_ITEMS = 30
+_GAP_SYMBOLS_PER_MODULE = 6
 _LIST_CELL_ITEMS = 6
 _TIER_LINES = 30
 _NAMES_PER_LINE = 20
@@ -430,7 +431,7 @@ def _gaps(atlas: "Atlas") -> list[str]:
     item("Modules without a docstring", [f"`{n}`" for n in g.modules_without_doc])
     item(
         "Public symbols without a docstring",
-        [f"`{u.module}`: {', '.join(u.symbols)}" for u in g.undocumented_symbols],
+        [f"`{u.module}`: {_list(u.symbols, _GAP_SYMBOLS_PER_MODULE)}" for u in g.undocumented_symbols],
     )
     item(
         "Components with no intent recorded",

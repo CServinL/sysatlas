@@ -176,6 +176,40 @@ class Symbols(unittest.TestCase):
 
 
 class PublicApi(unittest.TestCase):
+    def _api(self, init: str, container: str | None = None) -> list[str]:
+        base = Path(tempfile.mkdtemp())
+        root = base / (container or "pkg")
+        pkg = root / "pkg" if container else root
+        pkg.mkdir(parents=True)
+        (pkg / "__init__.py").write_text(init)
+        return sysatlas.reflect(root).to_atlas_model().public_api
+
+    def test_every_way_of_building_all_is_followed(self) -> None:
+        cases = {
+            "augmented": "__all__ = ['a']\n__all__ += ['b']\n",
+            "extend": "__all__ = ['a']\n__all__.extend(['b'])\n",
+            "append": "__all__ = ['a']\n__all__.append('b')\n",
+            "concatenated": "__all__ = ['a'] + ['b']\n",
+            "tuple": "__all__ = ('a', 'b')\n",
+            "duplicates": "__all__ = ['a', 'a', 'b']\n",
+        }
+        for label, init in cases.items():
+            with self.subTest(label):
+                self.assertEqual(self._api(init), ["a", "b"])
+
+    def test_a_later_assignment_replaces_the_earlier_one(self) -> None:
+        self.assertEqual(self._api("__all__ = ['old']\n__all__ = ['new']\n"), ["new"])
+
+    def test_package_inside_a_container_root_is_read(self) -> None:
+        self.assertEqual(self._api("__all__ = ['a']\n", container="src"), ["a"])
+
+    def test_several_packages_in_a_container_are_ambiguous(self) -> None:
+        root = Path(tempfile.mkdtemp()) / "src"
+        for name in ("one", "two"):
+            (root / name).mkdir(parents=True)
+            (root / name / "__init__.py").write_text("__all__ = ['x']\n")
+        self.assertEqual(sysatlas.reflect(root).to_atlas_model().public_api, [])
+
     def test_annotated_all_is_read(self) -> None:
         root = Path(tempfile.mkdtemp()) / "pkg"
         root.mkdir()

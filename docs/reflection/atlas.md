@@ -22,13 +22,13 @@ A component is a cluster of modules that acts as one unit: modules that import e
 | `bpmn_map` | 0 | builders | 1 (74 loc) | logic×1 | Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline. | _render, bpmn-pipeline, diagram-types | — |
 | `class_map` | 0 | builders | 1 (196 loc) | logic×1 | Fluent builder for UML class diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `er_map` | 0 | builders | 1 (156 loc) | logic×1 | Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
-| `reflection` | 0 | reflection | 10 (1767 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, patterns, project, resolve +3 | — |
+| `reflection` | 0 | reflection | 10 (1811 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, patterns, project, resolve +3 | — |
 | `sequence_map` | 0 | builders | 1 (77 loc) | logic×1 | Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline. | _render, diagram-types, sequence-pipeline | — |
 | `state_map` | 0 | builders | 1 (168 loc) | logic×1 | Fluent builder for state machine diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
 | `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
-| `parser` | 1 | reflection | 1 (490 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
-| `patterns` | 1 | reflection | 1 (278 loc) | logic×1 | Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry… | external | — |
+| `parser` | 1 | reflection | 1 (557 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
+| `patterns` | 1 | reflection | 1 (281 loc) | logic×1 | Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry… | external | — |
 | `project` | 1 | reflection | 1 (35 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
 | `sequence-pipeline` | 1 | layout | 2 (224 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
 | `spec` | 1 | reflection | 1 (107 loc) | logic×1 | Holds the planned architecture from the hints file and checks the code's import edges against it. | — | — |
@@ -138,7 +138,7 @@ _From the hints file or from module names; not derived from imports._
 | `layers` | Heuristic: top-level package segment → architectural layer name. | logic | s | infer_group(), infer_layer(), layer_rank() | 0 | 2 |
 | `merge` | Merge a user-authored 'annotation overlay' SystemMap onto reflected structure. | logic | s | merge_overlay() | 2 | 1 |
 | `metrics` | Graph metrics over a kept module set: fan-in/out, import cycles, cross-package edges. | logic | m | CrossPackageEdge, GraphMetrics, ModuleMetrics, compute_metrics() | 1 | 1 |
-| `parser` | AST-only scanner. Reads a Python source tree without importing it. | logic | l | ClassLink, Module, ProjectGraph, scan() | 2 | 4 |
+| `parser` | AST-only scanner. Reads a Python source tree without importing it. | logic | xl | ClassLink, Module, ProjectGraph, scan() | 2 | 4 |
 | `parser_rust` | tree-sitter Rust scanner. Reads a Rust source tree without compiling it. | logic | m | scan_rust() | 2 | 1 |
 | `patterns` | Architectural pattern candidates found from structure alone. | logic | l | PatternCandidate, detect_patterns() | 1 | 1 |
 | `project` | Project metadata that lives next to the source: console scripts from pyproject.toml. | logic | s | console_scripts() | 0 | 1 |

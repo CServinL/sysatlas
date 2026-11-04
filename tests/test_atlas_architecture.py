@@ -768,6 +768,114 @@ class CopilotReviewRegressions(unittest.TestCase):
         self.assertEqual([m.name for m in kept], ["p.keep"])
 
 
+class SecondCopilotRegressions(unittest.TestCase):
+    """Defects found by the second Copilot review of PR 6, with their siblings."""
+
+    def _model(self, files: dict[str, str], hints: Hints | None = None, **kw):
+        return _reflect(_tree(files), hints).to_atlas_model(**kw)
+
+    def test_a_nested_import_does_not_change_module_level_bindings(self) -> None:
+        model = self._model({
+            "m.py": '''
+                from pydantic import BaseModel as Schema
+                from click import command as cmd
+
+                class User(Schema): ...
+
+                @cmd()
+                def one(): ...
+
+                def helper():
+                    from collections import UserDict as Schema
+                    from other import thing as cmd
+                    return Schema, cmd
+            ''',
+        })
+        m = next(x for x in model.modules if x.name == "pkg.m")
+        self.assertEqual(m.models, ["User"])
+        self.assertEqual(m.entry_points, ["cli one"])
+
+    def test_a_nested_import_applies_inside_its_own_scope(self) -> None:
+        model = self._model({
+            "m.py": '''
+                import click
+
+                def build():
+                    from click import command as c2
+
+                    @c2
+                    def inner(): ...
+                    return inner
+            ''',
+        })
+        self.assertEqual(next(x for x in model.modules if x.name == "pkg.m").entry_points, ["cli inner"])
+
+    def test_gap_output_is_bounded_per_module(self) -> None:
+        body = "\n".join(f"def f{i}(): ..." for i in range(300))
+        text = self._model({"big.py": body}).to_markdown()
+        line = next(ln for ln in text.splitlines() if ln.startswith("- Public symbols without a docstring"))
+        self.assertIn("… +", line)
+        self.assertLess(len(line), 600)
+
+    def test_a_declared_group_is_never_split_by_size(self) -> None:
+        files = {f"big/m{i}.py": "X = 1\n" for i in range(11)}
+        hints = Hints(group={f"pkg.big.m{i}": "big" for i in range(11)})
+        model = self._model(files, hints, intent={"components": {"big": {"purpose": "kept"}}})
+        self.assertEqual([(c.name, c.module_count) for c in model.components], [("big", 11)])
+        self.assertEqual(model.gaps.unknown_intent, [])
+        inferred = self._model(files)
+        self.assertGreater(len(inferred.components), 1)
+
+    def test_import_examples_in_docstrings_do_not_rename_modules(self) -> None:
+        base = Path(tempfile.mkdtemp())
+        root = base / "src"
+        (root / "pkg").mkdir(parents=True)
+        (root / "pkg" / "__init__.py").write_text("")
+        (root / "pkg" / "a.py").write_text('"""Usage:\n\n    import src.example\n    from src.example import x\n"""\nfrom pkg import b\n')
+        (root / "pkg" / "b.py").write_text("X = 1\n")
+        graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
+        self.assertEqual(sorted(graph), ["pkg", "pkg.a", "pkg.b"])
+        self.assertIn("pkg.b", graph["pkg.a"].imports)
+
+    def test_every_matching_abstract_base_is_recorded(self) -> None:
+        model = self._model({
+            "base.py": "from abc import ABC, abstractmethod\n"
+                       "class P(ABC):\n    @abstractmethod\n    def f(self): ...\n"
+                       "class Q(ABC):\n    @abstractmethod\n    def g(self): ...\n",
+            "a.py": "from pkg.base import P, Q\nclass A(P, Q): ...\n",
+            "b.py": "from pkg.base import Q\nclass B(Q): ...\n",
+        })
+        evidence = " ".join(_pattern(model, "Strategy").evidence)
+        self.assertIn("Q (base): A (a), B (b)", evidence)
+        a = next(x for x in model.modules if x.name == "pkg.a")
+        self.assertEqual([(l.cls, l.base) for l in a.implements], [("A", "P"), ("A", "Q")])
+
+    def test_implementer_lists_are_bounded(self) -> None:
+        files = {"base.py": "from abc import ABC, abstractmethod\nclass S(ABC):\n    @abstractmethod\n    def f(self): ...\n"}
+        files.update({f"i{n}.py": f"from pkg.base import S\nclass I{n}(S): ...\n" for n in range(30)})
+        evidence = _pattern(self._model(files), "Strategy").evidence[0]
+        self.assertIn("… +22", evidence)
+
+    def test_environment_reads_by_keyword(self) -> None:
+        model = self._model({
+            "e.py": '''
+                import os
+                from os import getenv as g, environ as env
+                a = os.getenv(key="A_KEY")
+                b = os.environ.get(key="B_KEY")
+                c = g(key="C_KEY", default="x")
+                d = env.get(key="D_KEY")
+                e = os.getenv(name_from_elsewhere)
+                f = os.getenv(key=name_from_elsewhere)
+            ''',
+        })
+        self.assertEqual([v.name for v in model.env_vars], ["A_KEY", "B_KEY", "C_KEY", "D_KEY"])
+
+    def test_route_path_given_as_the_flask_rule_keyword(self) -> None:
+        model = self._model({"w.py": "from flask import Flask\napp = Flask(__name__)\n@app.route(rule='/x')\ndef x(): ...\n"})
+        self.assertEqual(next(x for x in model.modules if x.name == "pkg.w").entry_points, ["route /x"])
+
+
 class UnboundedSections(unittest.TestCase):
     """Every section of the Markdown stays bounded, however big the repo."""
 

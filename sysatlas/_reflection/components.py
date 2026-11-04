@@ -74,10 +74,15 @@ def compute_components(
     group_of: Callable[[str], str | None],
     layer_of: Callable[[str], str],
     label_of: Callable[[str], str],
+    is_hinted: Callable[[str], bool] = lambda name: False,
 ) -> ComponentGraph:
-    """Cluster `names` (dotted module names) into components over `edges` (src imports dst)."""
+    """Cluster `names` (dotted module names) into components over `edges` (src imports dst).
+
+    `is_hinted(name)` tells whether the module's group was declared in the hints
+    file; a declared group is never split by size.
+    """
     degree: Counter[str] = Counter(m for edge in edges for m in edge)
-    blocks = _seed_blocks(sorted(names), group_of, label_of)
+    blocks = _seed_blocks(sorted(names), group_of, label_of, is_hinted)
     blocks = _merge_cycles(blocks, edges, degree)
     blocks = _absorb_private_helpers(blocks, edges, layer_of)
     blocks = _unique_names(blocks, degree)
@@ -85,7 +90,10 @@ def compute_components(
 
 
 def _seed_blocks(
-    names: list[str], group_of: Callable[[str], str | None], label_of: Callable[[str], str]
+    names: list[str],
+    group_of: Callable[[str], str | None],
+    label_of: Callable[[str], str],
+    is_hinted: Callable[[str], bool],
 ) -> dict[str, _Block]:
     by_group: dict[str, list[str]] = {}
     for n in names:
@@ -97,7 +105,9 @@ def _seed_blocks(
         members = by_group[key]
         if key.startswith("\0"):
             blocks[f"m:{members[0]}"] = _Block(name=label_of(members[0]), members=set(members))
-        elif len(members) > MAX_COMPONENT_MODULES and all(_is_path_group(n, key) for n in members):
+        elif len(members) > MAX_COMPONENT_MODULES and all(
+            _is_path_group(n, key) and not is_hinted(n) for n in members
+        ):
             _split_oversized(key, members, 2, blocks, label_of)
         else:
             blocks[f"g:{key}"] = _Block(name=key, members=set(members))
