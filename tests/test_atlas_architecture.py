@@ -11,6 +11,7 @@ from unittest import mock
 from pathlib import Path
 
 import sysatlas
+from sysatlas._reflection import project as project_module
 from sysatlas._reflection.intent import Intent
 from sysatlas._reflection.reflection import Hints
 from sysatlas._reflection.spec import ArchitectureSpec
@@ -92,6 +93,7 @@ class EntryPoints(unittest.TestCase):
         })
         self.assertEqual(_mod(_reflect(root).to_atlas_model(), "x").entry_points, [])
 
+    @unittest.skipIf(project_module.tomllib is None, "no TOML reader on this Python")
     def test_console_script_from_pyproject(self) -> None:
         root = _tree(
             {"cli.py": "def main(): ...\n"},
@@ -678,6 +680,152 @@ class ImportResolution(unittest.TestCase):
                       "sub/b.py": "X = 1\n", "top.py": "T = 1\n"})
         graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
         self.assertEqual(graph["pkg.sub.a"].imports, ["pkg.sub", "pkg.sub.b", "pkg.top"])
+
+
+class CopilotReviewRegressions(unittest.TestCase):
+    """Defects found by the Copilot review of PR 6, with their siblings."""
+
+    def _model(self, files: dict[str, str]):
+        return _reflect(_tree(files)).to_atlas_model()
+
+    def _models(self, model) -> dict[str, list[str]]:
+        return {m.name: m.models for m in model.modules if m.models}
+
+    def test_oversized_subgroup_is_split_again(self) -> None:
+        model = self._model({f"big/sub/m{i}.py": "X = 1\n" for i in range(11)})
+        self.assertLessEqual(max(c.module_count for c in model.components), 10)
+
+    def test_oversized_subgroup_splits_recursively_through_levels(self) -> None:
+        files = {f"big/a/b/m{i}.py": "X = 1\n" for i in range(11)}
+        files.update({f"big/a/c/m{i}.py": "X = 1\n" for i in range(3)})
+        model = self._model(files)
+        names = {c.name for c in model.components}
+        self.assertLessEqual(max(c.module_count for c in model.components), 10)
+        self.assertIn("big.a.c", names)
+
+    def test_checkout_directory_named_like_its_package_keeps_container_naming(self) -> None:
+        base = Path(tempfile.mkdtemp())
+        root = base / "pkg"  # repository checkout
+        (root / "pkg").mkdir(parents=True)  # the package itself
+        (root / "pkg" / "__init__.py").write_text("")
+        (root / "pkg" / "a.py").write_text("from pkg import b\n")
+        (root / "pkg" / "b.py").write_text("X = 1\n")
+        graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
+        self.assertEqual(sorted(graph), ["pkg", "pkg.a", "pkg.b"])
+        self.assertIn("pkg.b", graph["pkg.a"].imports)
+
+    def test_aliased_imports_are_resolved_for_models_and_interfaces(self) -> None:
+        model = self._model({
+            "m.py": "from pydantic import BaseModel as Schema\nfrom dataclasses import dataclass as dc\nclass User(Schema): ...\n@dc\nclass Row: ...\n",
+            "kid.py": "from pkg.m import User\nclass Admin(User): ...\n",
+            "base.py": "from abc import ABC as Root, abstractmethod as am\nclass S(Root):\n    @am\n    def f(self): ...\n",
+            "a.py": "from pkg.base import S\nclass A(S): ...\n",
+            "b.py": "from pkg.base import S\nclass B(S): ...\n",
+        })
+        self.assertEqual(self._models(model), {"pkg.m": ["Row", "User"], "pkg.kid": ["Admin"]})
+        self.assertEqual(_pattern(model, "Strategy").evidence[0].split(":")[0], "S (base)")
+
+    def test_attribute_chain_bases_resolve(self) -> None:
+        model = self._model({
+            "base.py": "from pydantic import BaseModel\nclass Common(BaseModel): ...\n",
+            "m.py": "import pkg.base\nclass Child(pkg.base.Common): ...\n",
+            "n.py": "import pkg.base as b\nclass Other(b.Common): ...\n",
+        })
+        self.assertEqual(self._models(model), {"pkg.base": ["Common"], "pkg.m": ["Child"], "pkg.n": ["Other"]})
+
+    def test_decorators_imported_by_name_are_entry_points(self) -> None:
+        model = self._model({
+            "bare.py": "from click import command\n@command\ndef one(): ...\n",
+            "called.py": "from click import command as cmd\n@cmd()\ndef two(): ...\n",
+            "route.py": "from litestar import get\n@get('/x')\ndef three(): ...\n",
+            "task.py": "from celery import shared_task as st\n@st\ndef four(): ...\n",
+            "plain.py": "def command(f): return f\n@command\ndef nope(): ...\n",
+        })
+        found = {m.name.split(".")[-1]: m.entry_points for m in model.modules if m.entry_points}
+        self.assertEqual(
+            found,
+            {"bare": ["cli one"], "called": ["cli two"], "route": ["route GET /x"], "task": ["task four"]},
+        )
+
+    def test_aliased_os_module_still_reads_env(self) -> None:
+        model = self._model({"e.py": "import os as _os\na = _os.environ['A_VAR']\nb = _os.getenv('B_VAR')\n_os.environ['C_VAR'] = '1'\n"})
+        self.assertEqual([v.name for v in model.env_vars], ["A_VAR", "B_VAR"])
+
+    def test_exclusions_match_posix_paths_on_windows(self) -> None:
+        from pathlib import PureWindowsPath
+        from unittest import mock
+
+        from sysatlas._reflection.parser import Module, ProjectGraph
+        from sysatlas._reflection.reflection import Reflection
+
+        root = "C:\\proj"
+        graph = ProjectGraph(root=root, modules=[
+            Module(name="p._reflection.parser", path="C:\\proj\\_reflection\\parser.py", package="p"),
+            Module(name="p.keep", path="C:\\proj\\keep.py", package="p"),
+        ])
+        with mock.patch("sysatlas._reflection.reflection.Path", PureWindowsPath):
+            kept = Reflection(graph, Hints()).exclude("_reflection/*")._kept_modules()
+        self.assertEqual([m.name for m in kept], ["p.keep"])
+
+
+class UnboundedSections(unittest.TestCase):
+    """Every section of the Markdown stays bounded, however big the repo."""
+
+    def _atlas(self) -> str:
+        n = 120
+        files = {"__init__.py": "__all__ = [" + ", ".join(f"'s{i}'" for i in range(200)) + "]\n"}
+        for i in range(n):
+            files[f"g{i}/m{i}.py"] = (
+                "".join(f"from pkg.g{j} import m{j}\n" for j in range(i + 1, min(n, i + 40)))
+                + f"import lib{i}\nfrom pydantic import BaseModel\nclass M{i}(BaseModel): ...\n"
+            )
+        for i in range(40):  # 40 separate two-module import cycles
+            files[f"cyc{i}/a.py"] = f"from pkg.cyc{i} import b\n"
+            files[f"cyc{i}/b.py"] = f"from pkg.cyc{i} import a\n"
+        hints = Hints(
+            layer={f"pkg.g{i}.m{i}": f"layer{i}" for i in range(n)},
+            architecture=ArchitectureSpec.model_validate({
+                "components": [
+                    {"name": f"c{i}", "modules": [f"pkg.g{i}.m{i}"]} for i in range(n)
+                ] + [{"name": f"empty{i}", "modules": [f"pkg.none{i}.*"]} for i in range(60)]
+            }),
+        )
+        root = _tree(files)
+        (root / "__init__.py").write_text(files["__init__.py"])
+        intent = {
+            "patterns": [{"name": f"P{i}", "description": "d", "components": [f"x{j}" for j in range(40)]} for i in range(60)],
+        }
+        return sysatlas.reflect(root, hints=hints).exclude("__init__.py").to_atlas(intent=intent)
+
+    def test_every_section_is_bounded_and_says_what_it_left_out(self) -> None:
+        text = self._atlas()
+        sections = text.split("\n## ")[1:]
+        self.assertGreater(len(sections), 10)
+        for section in sections:
+            title = section.split("\n", 1)[0]
+            with self.subTest(section=title):
+                self.assertLess(len(section.splitlines()), 260)
+                self.assertLess(max(len(line) for line in section.splitlines()), 1500)
+        self.assertLess(len(text), 120_000)
+        for marker in ("more packages", "more_", "… +"):
+            self.assertIn(marker, text)
+
+    def test_omitted_counts_are_stated_for_each_capped_list(self) -> None:
+        text = self._atlas()
+        by_title = {s.split("\n", 1)[0]: s for s in text.split("\n## ")[1:]}
+        self.assertIn("more packages", by_title["Packages"])
+        self.assertIn("more_", by_title["Layers"])
+        self.assertIn("more_", by_title["Import cycles"])
+        self.assertIn("more_", by_title["Public API surface"])
+        self.assertIn("more_", by_title["Component dependencies"])
+        self.assertIn("more_", by_title["Spec conformance"])
+        self.assertIn("more_", by_title["Architectural patterns"])
+        self.assertIn("Other third-party libraries", by_title["External systems"])
+        self.assertIn("… +", by_title["External systems"])
+
+
+def _pattern(model, name: str):
+    return next(c for c in model.pattern_candidates if c.name == name)
 
 
 if __name__ == "__main__":

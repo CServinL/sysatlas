@@ -6,7 +6,8 @@ depend on dict / set order or PYTHONHASHSEED.
 Steps:
 1. Seed blocks: modules that share a (hinted or inferred) group start as one
    block; every other module is its own block. An inferred group that already
-   exceeds the size cap is split by its next package level.
+   exceeds the size cap is split by its sub-packages, recursively; modules left
+   directly in an oversized package become one component each.
 2. Merge blocks that import each other in a cycle.
 3. Absorb a block into the one block that alone depends on it, when both sit
    in the same layer and the result stays small. A helper used by one caller
@@ -22,6 +23,7 @@ import networkx as nx
 from pydantic import BaseModel, ConfigDict, Field
 
 MAX_COMPONENT_MODULES = 10
+"""Size cap for helper absorption and for inferred packages. Import cycles and hinted groups can exceed it."""
 _EXAMPLES_PER_EDGE = 3
 
 
@@ -96,12 +98,7 @@ def _seed_blocks(
         if key.startswith("\0"):
             blocks[f"m:{members[0]}"] = _Block(name=label_of(members[0]), members=set(members))
         elif len(members) > MAX_COMPONENT_MODULES and all(_is_path_group(n, key) for n in members):
-            for n in members:
-                sub = _subpackage(n)
-                if sub is None:
-                    blocks[f"m:{n}"] = _Block(name=label_of(n), members={n})
-                else:
-                    blocks.setdefault(f"g:{key}.{sub}", _Block(name=f"{key}.{sub}", members=set())).members.add(n)
+            _split_oversized(key, members, 2, blocks, label_of)
         else:
             blocks[f"g:{key}"] = _Block(name=key, members=set(members))
     return blocks
@@ -113,10 +110,31 @@ def _is_path_group(name: str, group: str) -> bool:
     return len(parts) > 1 and parts[1] == group
 
 
-def _subpackage(name: str) -> str | None:
-    """Next package level below the group: 'pkg.grp.sub.mod' -> 'sub'; None for 'pkg.grp.mod'."""
-    parts = name.split(".")
-    return parts[2] if len(parts) > 3 else None
+def _split_oversized(
+    name: str,
+    members: list[str],
+    depth: int,
+    blocks: dict[str, _Block],
+    label_of: Callable[[str], str],
+) -> None:
+    """Split an inferred package that is over the size cap by its sub-packages, recursively.
+
+    `depth` is the number of leading name segments already consumed. Modules
+    that sit directly in the package become one component each, so no component
+    exceeds the cap even when there is no further package boundary to split on.
+    """
+    if len(members) <= MAX_COMPONENT_MODULES:
+        blocks[f"g:{name}"] = _Block(name=name, members=set(members))
+        return
+    by_sub: dict[str, list[str]] = {}
+    for n in members:
+        parts = n.split(".")
+        if len(parts) > depth + 1:
+            by_sub.setdefault(parts[depth], []).append(n)
+        else:
+            blocks[f"m:{n}"] = _Block(name=label_of(n), members={n})
+    for sub in sorted(by_sub):
+        _split_oversized(f"{name}.{sub}", by_sub[sub], depth + 1, blocks, label_of)
 
 
 def _block_edges(

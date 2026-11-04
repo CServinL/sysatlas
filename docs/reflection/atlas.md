@@ -22,12 +22,12 @@ A component is a cluster of modules that acts as one unit: modules that import e
 | `bpmn_map` | 0 | builders | 1 (74 loc) | logic×1 | Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline. | _render, bpmn-pipeline, diagram-types | — |
 | `class_map` | 0 | builders | 1 (196 loc) | logic×1 | Fluent builder for UML class diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `er_map` | 0 | builders | 1 (156 loc) | logic×1 | Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
-| `reflection` | 0 | reflection | 10 (1714 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, patterns, project, resolve +3 | — |
+| `reflection` | 0 | reflection | 10 (1767 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, patterns, project, resolve +3 | — |
 | `sequence_map` | 0 | builders | 1 (77 loc) | logic×1 | Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline. | _render, diagram-types, sequence-pipeline | — |
 | `state_map` | 0 | builders | 1 (168 loc) | logic×1 | Fluent builder for state machine diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
 | `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
-| `parser` | 1 | reflection | 1 (478 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
+| `parser` | 1 | reflection | 1 (490 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
 | `patterns` | 1 | reflection | 1 (278 loc) | logic×1 | Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry… | external | — |
 | `project` | 1 | reflection | 1 (35 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
 | `sequence-pipeline` | 1 | layout | 2 (224 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |

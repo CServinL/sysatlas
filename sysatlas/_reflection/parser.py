@@ -129,6 +129,8 @@ def _namespace_prefix(scan_root: Path, files: list[Path]) -> str:
     name = scan_root.name
     if (scan_root / "__init__.py").exists() or not name.isidentifier():
         return ""
+    if (scan_root / name).is_dir():
+        return ""  # a checkout `pkg/` that contains the package `pkg/pkg/`: scan_root is only a container
     own_import = re.compile(rf"^\s*(?:from|import)\s+{re.escape(name)}(?:\.|\s|$)", re.M)
     for p in files:
         if own_import.search(p.read_text(encoding="utf-8", errors="replace")):
@@ -180,6 +182,7 @@ _CLI_ATTRS = frozenset({"command", "group"})
 _TASK_NAMES = frozenset({"task", "shared_task"})
 _WEB_ROOTS = frozenset({
     "fastapi", "flask", "starlette", "quart", "sanic", "bottle", "aiohttp", "tornado", "django", "falcon",
+    "litestar", "blacksheep",
 })
 _CLI_ROOTS = frozenset({"click", "typer"})
 _TASK_ROOTS = frozenset({"celery", "dramatiq", "rq", "huey", "arq", "taskiq"})
@@ -236,16 +239,17 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
                     os_env[alias.name].add(alias.asname or alias.name)
 
     roots = {i.split(".")[0] for i in imports}
+    os_names = {"os"} | {local for local, target in aliases.items() if target == "os"}
     entry_points: list[str] = []
     env_vars: list[str] = []
     for node in nodes:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for dec in node.decorator_list:
-                entry = _decorator_entry(dec, node.name, roots)
+                entry = _decorator_entry(dec, node.name, roots, aliases)
                 if entry:
                     entry_points.append(entry)
         else:
-            var = _env_var(node, os_env)
+            var = _env_var(node, os_env, os_names)
             if var:
                 env_vars.append(var)
     if any(isinstance(n, ast.If) and _is_main_guard(n.test) for n in tree.body):
@@ -277,26 +281,26 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
         class_bases={n.name: [_base_text(b) for b in n.bases] for n in top_classes},
         direct_models=[
             n.name for n in top_classes
-            if {_name_of(b) for b in n.bases} & model_bases
-            or any(_name_of(d) == "dataclass" for d in n.decorator_list)
+            if {_name_of(b, aliases) for b in n.bases} & model_bases
+            or any(_name_of(d, aliases) == "dataclass" for d in n.decorator_list)
         ],
         import_aliases=aliases,
-        abstract_classes=[n.name for n in top_classes if _is_abstract(n)],
+        abstract_classes=[n.name for n in top_classes if _is_abstract(n, aliases)],
         fluent_classes=[
-            n.name for n in public_classes if _fluent_method_count(n) >= _FLUENT_MIN_METHODS
+            n.name for n in public_classes if _fluent_method_count(n, aliases) >= _FLUENT_MIN_METHODS
         ],
     )
 
 
-def _is_abstract(cls: ast.ClassDef) -> bool:
+def _is_abstract(cls: ast.ClassDef, aliases: dict[str, str]) -> bool:
     """ABC / Protocol base, ABCMeta metaclass, or any @abstractmethod."""
-    if {_name_of(b) for b in cls.bases} & _ABSTRACT_BASES:
+    if {_name_of(b, aliases) for b in cls.bases} & _ABSTRACT_BASES:
         return True
-    if any(k.arg == "metaclass" and _name_of(k.value) == "ABCMeta" for k in cls.keywords):
+    if any(k.arg == "metaclass" and _name_of(k.value, aliases) == "ABCMeta" for k in cls.keywords):
         return True
     return any(
         isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
-        and any(_name_of(d) in ("abstractmethod", "abstractproperty") for d in m.decorator_list)
+        and any(_name_of(d, aliases) in ("abstractmethod", "abstractproperty") for d in m.decorator_list)
         for m in cls.body
     )
 
@@ -323,27 +327,33 @@ def _is_return_self(node: ast.AST) -> bool:
     )
 
 
-def _fluent_method_count(cls: ast.ClassDef) -> int:
+def _fluent_method_count(cls: ast.ClassDef, aliases: dict[str, str]) -> int:
     """Public instance methods that always return `self`: the last statement is
     `return self` and no other `return` returns anything else."""
     count = 0
     for m in cls.body:
         if not isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) or m.name.startswith("_"):
             continue
-        if any(_name_of(d) in _NOT_CHAINED for d in m.decorator_list):
+        if any(_name_of(d, aliases) in _NOT_CHAINED for d in m.decorator_list):
             continue
         if m.body and _is_return_self(m.body[-1]) and all(_is_return_self(r) for r in _returns_of(m)):
             count += 1
     return count
 
 
-def _name_of(node: ast.expr) -> str | None:
-    """Last identifier of a Name / Attribute / Call(func=...) / Subscript(value=...) expression."""
+def _name_of(node: ast.expr, aliases: dict[str, str] | None = None) -> str | None:
+    """Last identifier of a Name / Attribute / Call(func=...) / Subscript(value=...) expression.
+
+    A bare name imported under another name (`from pydantic import BaseModel as
+    Schema`) is reported as the name it was imported as (`BaseModel`).
+    """
     if isinstance(node, ast.Call):
         node = node.func
     if isinstance(node, ast.Subscript):
         node = node.value
     if isinstance(node, ast.Name):
+        if aliases and node.id in aliases:
+            return aliases[node.id].rpartition(".")[2]
         return node.id
     if isinstance(node, ast.Attribute):
         return node.attr
@@ -351,13 +361,16 @@ def _name_of(node: ast.expr) -> str | None:
 
 
 def _base_text(node: ast.expr) -> str:
-    """'Name' or 'head.Name' for a base-class expression (type arguments dropped); '' for anything else."""
+    """Dotted text of a base-class expression (`Name`, `a.b.Name`; type arguments dropped); '' for anything else."""
     if isinstance(node, ast.Subscript):
         node = node.value
+    parts: list[str] = []
+    while isinstance(node, ast.Attribute):
+        parts.append(node.attr)
+        node = node.value
     if isinstance(node, ast.Name):
-        return node.id
-    if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
-        return f"{node.value.id}.{node.attr}"
+        parts.append(node.id)
+        return ".".join(reversed(parts))
     return ""
 
 
@@ -396,9 +409,10 @@ def _base_targets(
     if not base:
         return []
     if "." in base:
-        head, attr = base.split(".", 1)
-        target = s.import_aliases.get(head)
-        first = [(target, attr)] if target else []
+        parts = base.split(".")
+        target = s.import_aliases.get(parts[0])
+        first = [(".".join([target, *parts[1:-1]]), parts[-1])] if target else []
+        first.append((".".join(parts[:-1]), parts[-1]))  # `import a.b` then `a.b.Name`
     else:
         first = [(mod, base)]
         target = s.import_aliases.get(base)
@@ -443,21 +457,20 @@ def _resolve_implementations(scans: dict[str, _SourceScan]) -> dict[str, list[Cl
     return out
 
 
-def _decorator_entry(dec: ast.expr, fn_name: str, roots: set[str]) -> str | None:
+def _decorator_entry(
+    dec: ast.expr, fn_name: str, roots: set[str], aliases: dict[str, str]
+) -> str | None:
     """Classify a decorator as a web route / CLI command / background task.
 
     A decorator only counts when the module imports a framework of that kind,
-    so `@pytest.mark.group` or a dict's `.get("/x")` are not entry points.
+    so `@pytest.mark.group` or a dict's `.get("/x")` are not entry points. The
+    decorator may be a method (`@app.get`), or a function imported by name
+    (`@get`, `@command`), called or not.
     """
-    name = _name_of(dec)
+    name = _name_of(dec, aliases)
     if name is None:
         return None
-    if (
-        isinstance(dec, ast.Call)
-        and isinstance(dec.func, ast.Attribute)
-        and name in _ROUTE_ATTRS
-        and roots & _WEB_ROOTS
-    ):
+    if isinstance(dec, ast.Call) and name in _ROUTE_ATTRS and roots & _WEB_ROOTS:
         path = dec.args[0] if dec.args else next(
             (k.value for k in dec.keywords if k.arg == "path"), None
         )
@@ -465,7 +478,7 @@ def _decorator_entry(dec: ast.expr, fn_name: str, roots: set[str]) -> str | None
             verb = "" if name == "route" else f"{name.upper()} "
             return f"route {verb}{path.value}"
         return None
-    if name in _CLI_ATTRS and isinstance(dec, (ast.Call, ast.Attribute)) and roots & _CLI_ROOTS:
+    if name in _CLI_ATTRS and roots & _CLI_ROOTS:
         return f"cli {fn_name}"
     if name in _TASK_NAMES and roots & _TASK_ROOTS:
         return f"task {fn_name}"
@@ -481,12 +494,12 @@ def _is_main_guard(test: ast.expr) -> bool:
     return has_name and has_main
 
 
-def _is_os_attr(node: ast.expr, attr: str) -> bool:
+def _is_os_attr(node: ast.expr, attr: str, os_names: set[str]) -> bool:
     return (
         isinstance(node, ast.Attribute)
         and node.attr == attr
         and isinstance(node.value, ast.Name)
-        and node.value.id == "os"
+        and node.value.id in os_names
     )
 
 
@@ -496,15 +509,15 @@ def _literal_str(node: ast.expr | None) -> str | None:
     return None
 
 
-def _env_var(node: ast.AST, os_env: dict[str, set[str]]) -> str | None:
+def _env_var(node: ast.AST, os_env: dict[str, set[str]], os_names: set[str]) -> str | None:
     """Literal key of a read: os.getenv(K), os.environ.get(K), os.environ[K] (not stores)."""
 
     def is_environ(n: ast.expr) -> bool:
-        return _is_os_attr(n, "environ") or (isinstance(n, ast.Name) and n.id in os_env["environ"])
+        return _is_os_attr(n, "environ", os_names) or (isinstance(n, ast.Name) and n.id in os_env["environ"])
 
     if isinstance(node, ast.Call) and node.args:
         func = node.func
-        is_getenv = _is_os_attr(func, "getenv") or (
+        is_getenv = _is_os_attr(func, "getenv", os_names) or (
             isinstance(func, ast.Name) and func.id in os_env["getenv"]
         )
         if is_getenv or (

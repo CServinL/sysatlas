@@ -62,7 +62,8 @@ class Reflection:
         excludes = list(self._hints.exclude) + self._extra_excludes
         kept = []
         for m in self._graph.modules:
-            rel = str(Path(m.path).relative_to(root)) if Path(m.path).is_relative_to(root) else m.path
+            mod_path = Path(m.path)
+            rel = (mod_path.relative_to(root) if mod_path.is_relative_to(root) else mod_path).as_posix()
             if any(fnmatch.fnmatchcase(rel, pat) or fnmatch.fnmatchcase(m.name, pat) for pat in excludes):
                 continue
             kept.append(m)
