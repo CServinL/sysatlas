@@ -11,6 +11,15 @@ from sysatlas._reflection.external import external_roots
 from sysatlas._reflection.resolve import resolve_import
 
 
+class ClassLink(BaseModel):
+    """A class and the in-tree abstract class it directly extends."""
+    model_config = ConfigDict(extra="forbid")
+
+    cls: str
+    base_module: str
+    base: str
+
+
 class Module(BaseModel):
     """One scanned .py file."""
     model_config = ConfigDict(extra="forbid")
@@ -43,6 +52,10 @@ class Module(BaseModel):
     """Environment variable names read with a literal key, sorted."""
     undocumented: list[str] = Field(default_factory=list)
     """Public top-level classes / functions that have no docstring, sorted."""
+    implements: list[ClassLink] = Field(default_factory=list)
+    """Public concrete classes that directly extend an abstract class defined in the scanned tree."""
+    fluent_classes: list[str] = Field(default_factory=list)
+    """Public classes with at least three public methods that only ever `return self`, sorted."""
 
 
 class ProjectGraph(BaseModel):
@@ -73,7 +86,9 @@ def scan(root: str | Path) -> ProjectGraph:
     in_tree_names = set(names.values())
     in_tree_tops = {n.split(".")[0] for n in in_tree_names}
     scan_of = {p: _scan_source(p, names[p]) for p in files}
-    models_of = _resolve_models({names[p]: s for p, s in scan_of.items()})
+    by_module = {names[p]: s for p, s in scan_of.items()}
+    models_of = _resolve_models(by_module)
+    links_of = _resolve_implementations(by_module)
     modules: list[Module] = []
     for p in files:
         modname = names[p]
@@ -97,6 +112,8 @@ def scan(root: str | Path) -> ProjectGraph:
                 models=sorted(set(src.classes) & set(models_of[modname])),
                 env_vars=sorted(set(src.env_vars)),
                 undocumented=sorted(src.undocumented),
+                implements=links_of[modname],
+                fluent_classes=sorted(src.fluent_classes),
             )
         )
     return ProjectGraph(root=str(scan_root), modules=modules)
@@ -154,6 +171,8 @@ class _SourceScan(BaseModel):
     """Top-level classes that are models by their own bases or decorators."""
     import_aliases: dict[str, str] = Field(default_factory=dict)
     """Local name -> absolute dotted target, for `import a.b as c` and `from a import b`."""
+    abstract_classes: list[str] = Field(default_factory=list)
+    fluent_classes: list[str] = Field(default_factory=list)
 
 
 _ROUTE_ATTRS = frozenset({"get", "post", "put", "delete", "patch", "head", "options", "route", "websocket"})
@@ -167,6 +186,9 @@ _TASK_ROOTS = frozenset({"celery", "dramatiq", "rq", "huey", "arq", "taskiq"})
 _MODEL_BASES = frozenset({"BaseModel", "BaseSettings", "SQLModel", "DeclarativeBase", "TypedDict", "NamedTuple"})
 _ORM_BASES = frozenset({"Base", "Model"})
 _ORM_ROOTS = frozenset({"sqlalchemy", "sqlmodel", "django", "peewee", "tortoise", "flask_sqlalchemy"})
+_ABSTRACT_BASES = frozenset({"ABC", "Protocol"})
+_FLUENT_MIN_METHODS = 3
+_NOT_CHAINED = frozenset({"property", "staticmethod", "classmethod", "cached_property", "setter", "getter", "deleter"})
 
 
 def _scan_source(path: Path, modname: str) -> _SourceScan:
@@ -259,13 +281,68 @@ def _scan_source(path: Path, modname: str) -> _SourceScan:
             or any(_name_of(d) == "dataclass" for d in n.decorator_list)
         ],
         import_aliases=aliases,
+        abstract_classes=[n.name for n in top_classes if _is_abstract(n)],
+        fluent_classes=[
+            n.name for n in public_classes if _fluent_method_count(n) >= _FLUENT_MIN_METHODS
+        ],
     )
 
 
+def _is_abstract(cls: ast.ClassDef) -> bool:
+    """ABC / Protocol base, ABCMeta metaclass, or any @abstractmethod."""
+    if {_name_of(b) for b in cls.bases} & _ABSTRACT_BASES:
+        return True
+    if any(k.arg == "metaclass" and _name_of(k.value) == "ABCMeta" for k in cls.keywords):
+        return True
+    return any(
+        isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and any(_name_of(d) in ("abstractmethod", "abstractproperty") for d in m.decorator_list)
+        for m in cls.body
+    )
+
+
+def _returns_of(fn: ast.AST) -> list[ast.Return]:
+    """Return statements of `fn` itself, not of functions or classes nested in it."""
+    found: list[ast.Return] = []
+    stack = list(ast.iter_child_nodes(fn))
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+            continue
+        if isinstance(node, ast.Return):
+            found.append(node)
+        stack.extend(ast.iter_child_nodes(node))
+    return found
+
+
+def _is_return_self(node: ast.AST) -> bool:
+    return (
+        isinstance(node, ast.Return)
+        and isinstance(node.value, ast.Name)
+        and node.value.id == "self"
+    )
+
+
+def _fluent_method_count(cls: ast.ClassDef) -> int:
+    """Public instance methods that always return `self`: the last statement is
+    `return self` and no other `return` returns anything else."""
+    count = 0
+    for m in cls.body:
+        if not isinstance(m, (ast.FunctionDef, ast.AsyncFunctionDef)) or m.name.startswith("_"):
+            continue
+        if any(_name_of(d) in _NOT_CHAINED for d in m.decorator_list):
+            continue
+        if m.body and _is_return_self(m.body[-1]) and all(_is_return_self(r) for r in _returns_of(m)):
+            count += 1
+    return count
+
+
 def _name_of(node: ast.expr) -> str | None:
-    """Last identifier of a Name / Attribute / Call(func=...) expression."""
+    """Last identifier of a Name / Attribute / Call(func=...) / Subscript(value=...) expression."""
     if isinstance(node, ast.Call):
         node = node.func
+    if isinstance(node, ast.Subscript):
+        node = node.value
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute):
@@ -274,7 +351,9 @@ def _name_of(node: ast.expr) -> str | None:
 
 
 def _base_text(node: ast.expr) -> str:
-    """'Name' or 'head.Name' for a base-class expression; '' for anything else."""
+    """'Name' or 'head.Name' for a base-class expression (type arguments dropped); '' for anything else."""
+    if isinstance(node, ast.Subscript):
+        node = node.value
     if isinstance(node, ast.Name):
         return node.id
     if isinstance(node, ast.Attribute) and isinstance(node.value, ast.Name):
@@ -297,7 +376,7 @@ def _resolve_models(scans: dict[str, _SourceScan]) -> dict[str, list[str]]:
             for cls in sorted(s.class_bases):
                 if (mod, cls) in models:
                     continue
-                if any(_base_is_model(b, mod, s, models) for b in s.class_bases[cls]):
+                if any(_base_is_model(b, mod, s, models, scans) for b in s.class_bases[cls]):
                     models.add((mod, cls))
                     changed = True
     return {
@@ -306,20 +385,62 @@ def _resolve_models(scans: dict[str, _SourceScan]) -> dict[str, list[str]]:
     }
 
 
-def _base_is_model(base: str, mod: str, s: _SourceScan, models: set[tuple[str, str]]) -> bool:
+_MAX_REEXPORT_HOPS = 3
+
+
+def _base_targets(
+    base: str, mod: str, s: _SourceScan, scans: dict[str, _SourceScan]
+) -> list[tuple[str, str]]:
+    """(module, class) places a base-class expression can refer to, including
+    the origin of a class re-exported through a package `__init__`."""
     if not base:
-        return False
+        return []
     if "." in base:
         head, attr = base.split(".", 1)
         target = s.import_aliases.get(head)
-        return target is not None and (target, attr) in models
-    if (mod, base) in models:
-        return True
-    target = s.import_aliases.get(base)
-    if target and "." in target:
-        owner, _, name = target.rpartition(".")
-        return (owner, name) in models
-    return False
+        first = [(target, attr)] if target else []
+    else:
+        first = [(mod, base)]
+        target = s.import_aliases.get(base)
+        if target and "." in target:
+            owner, _, name = target.rpartition(".")
+            first.append((owner, name))
+    out: list[tuple[str, str]] = []
+    for place in first:
+        for _ in range(_MAX_REEXPORT_HOPS + 1):
+            if place not in out:
+                out.append(place)
+            owner, name = place
+            nxt = scans[owner].import_aliases.get(name) if owner in scans else None
+            if not nxt or "." not in nxt:
+                break
+            place = (nxt.rpartition(".")[0], nxt.rpartition(".")[2])
+    return out
+
+
+def _base_is_model(
+    base: str, mod: str, s: _SourceScan, models: set[tuple[str, str]], scans: dict[str, _SourceScan]
+) -> bool:
+    return any(t in models for t in _base_targets(base, mod, s, scans))
+
+
+def _resolve_implementations(scans: dict[str, _SourceScan]) -> dict[str, list[ClassLink]]:
+    """Public concrete classes that directly extend an abstract class in the tree."""
+    abstract = {(mod, cls) for mod, s in scans.items() for cls in s.abstract_classes}
+    out: dict[str, list[ClassLink]] = {}
+    for mod in sorted(scans):
+        s = scans[mod]
+        links: list[ClassLink] = []
+        for cls in sorted(s.class_bases):
+            if cls.startswith("_") or cls in s.abstract_classes:
+                continue
+            for base in s.class_bases[cls]:
+                hit = next((t for t in _base_targets(base, mod, s, scans) if t in abstract), None)
+                if hit:
+                    links.append(ClassLink(cls=cls, base_module=hit[0], base=hit[1]))
+                    break
+        out[mod] = links
+    return out
 
 
 def _decorator_entry(dec: ast.expr, fn_name: str, roots: set[str]) -> str | None:

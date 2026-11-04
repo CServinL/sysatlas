@@ -35,7 +35,9 @@ sysatlas.reflect("path/to/source/root").save_atlas("docs/reflection/atlas.md",
 atlas, "Documentation gaps", lists missing docstrings and components with no
 recorded purpose. Fill them with the `sysatlas-document` skill, or by hand: write
 component purposes and architectural patterns into `intent.json`. The atlas
-marks that content as not generated. If the hints file declares an
+marks that content as not generated. The "Pattern candidates" section lists
+patterns whose structure the algorithm found; confirm them by reading the source
+before you record any. If the hints file declares an
 `architecture` spec, the atlas also reports where the code departs from it.
 
 The atlas mirrors how the code *is* organized; it says nothing about how it

@@ -43,6 +43,7 @@ def render_markdown(atlas: "Atlas") -> str:
     lines += _external_systems(atlas)
     lines += _data_models(atlas)
     lines += _configuration(atlas)
+    lines += _pattern_candidates(atlas)
     lines += _patterns(atlas)
     lines += _conformance(atlas)
     lines += _layers(atlas)
@@ -199,6 +200,23 @@ def _configuration(atlas: "Atlas") -> list[str]:
     return lines + _table(["environment variable", "read by"], rows) + _more(
         len(atlas.env_vars), _ENV_ROWS
     ) + [""]
+
+
+def _pattern_candidates(atlas: "Atlas") -> list[str]:
+    lines = [
+        "## Pattern candidates",
+        "",
+        "_Found from structure alone. Each is a candidate to confirm by reading the source, "
+        "not a verdict. State machine, dependency injection and middleware chain are not detected._",
+        "",
+    ]
+    if not atlas.pattern_candidates:
+        return lines + ["_None found._", ""]
+    rows = [
+        [c.name, _cell("; ".join(c.evidence), 200), _cell(_names(c.components), 80)]
+        for c in atlas.pattern_candidates
+    ]
+    return lines + _table(["pattern", "evidence", "components"], rows) + [""]
 
 
 def _patterns(atlas: "Atlas") -> list[str]:

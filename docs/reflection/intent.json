@@ -62,7 +62,14 @@
       "patterns": [
         "Deterministic generated artifact"
       ],
-      "fingerprint": "ff3f8825f24d"
+      "fingerprint": "0ca9a56caf5c"
+    },
+    "patterns": {
+      "purpose": "Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry, repository, event-driven, client and server, commands) and reports each with its evidence. Candidates only: it does not decide whether a pattern is really used.",
+      "patterns": [
+        "Deterministic generated artifact"
+      ],
+      "fingerprint": "d94ef11c832e"
     },
     "project": {
       "purpose": "Reads the console scripts declared in the nearest pyproject.toml.",
@@ -166,6 +173,7 @@
       "description": "Reflection output is a pure function of the source tree: every list is sorted, nothing depends on time, paths or hash order, so the atlas can be committed and diffed.",
       "components": [
         "parser",
+        "patterns",
         "reflection"
       ]
     }

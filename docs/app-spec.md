@@ -44,8 +44,9 @@ directions:
 5. **Architecture atlas** — a deterministic, bounded Markdown map of a
    repo's architecture: components and dependency tiers, entry points,
    external systems, data models, configuration, cycles and hotspots. It
-   reports where the code departs from a declared architecture spec, and
-   lists what still needs documenting.
+   reports where the code departs from a declared architecture spec, lists
+   architectural pattern candidates with their evidence, and lists what still
+   needs documenting.
 6. **Intent overlay** — a hand- or LLM-written JSON file with component
    purposes and architectural patterns, merged into the atlas and marked as
    not generated. Fingerprints flag entries that the code has outgrown.

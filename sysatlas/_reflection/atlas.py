@@ -24,6 +24,8 @@ from sysatlas._reflection.external import KINDS_AS_ADAPTER, classify_external
 from sysatlas._reflection.intent import Intent, fingerprint, load_intent
 from sysatlas._reflection.layers import layer_rank
 from sysatlas._reflection.metrics import ROOT_GROUP, compute_metrics
+from sysatlas._reflection.parser import ClassLink
+from sysatlas._reflection.patterns import PatternCandidate, detect_patterns
 from sysatlas._reflection.project import console_scripts
 from sysatlas._reflection.spec import Conformance, check_conformance
 
@@ -83,6 +85,8 @@ class AtlasModule(BaseModel):
     models: list[str] = Field(default_factory=list)
     env_vars: list[str] = Field(default_factory=list)
     undocumented: list[str] = Field(default_factory=list)
+    implements: list[ClassLink] = Field(default_factory=list)
+    fluent_classes: list[str] = Field(default_factory=list)
 
 
 class AtlasLayer(BaseModel):
@@ -236,6 +240,8 @@ class Atlas(BaseModel):
     """Other third-party packages that are not a known external system."""
     data_models: list[AtlasModels] = Field(default_factory=list)
     env_vars: list[AtlasEnvVar] = Field(default_factory=list)
+    pattern_candidates: list[PatternCandidate] = Field(default_factory=list)
+    """Patterns whose structural footprint was found; to be confirmed by reading the source."""
     patterns: list[AtlasPattern] = Field(default_factory=list)
     conformance: Conformance | None = None
     """Set only when the hints file declares an `architecture` spec."""
@@ -310,6 +316,8 @@ def build_atlas_model(
                 models=list(m.models),
                 env_vars=list(m.env_vars),
                 undocumented=list(m.undocumented),
+                implements=list(m.implements),
+                fluent_classes=list(m.fluent_classes),
             )
         )
 
@@ -368,6 +376,7 @@ def build_atlas_model(
         libraries=libraries,
         data_models=_build_data_models(modules),
         env_vars=_build_env_vars(modules),
+        pattern_candidates=detect_patterns(modules, components, len(cycles)),
         patterns=[
             AtlasPattern(name=p.name, description=p.description, components=sorted(p.components))
             for p in sorted(intent_model.patterns, key=lambda p: p.name)

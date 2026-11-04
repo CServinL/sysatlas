@@ -75,6 +75,11 @@ never hand-written, so it cannot drift from the source. It maps:
 - **External systems** — databases, HTTP APIs, queues, cloud and model APIs,
   inferred from imports.
 - **Data models**, **environment variables**, import cycles, coupling hotspots.
+- **Pattern candidates** — architectural patterns whose structural footprint
+  was found (layered, pipeline, ports and adapters, strategy, facade, fluent
+  builder, plugin registry, repository, event-driven, client and server,
+  commands), each with its evidence. The `sysatlas-document` skill confirms or
+  rejects them by reading the source.
 - **Conformance** — if the hints file (`sysatlas.json`) declares an
   `architecture` (planned components and which may depend on which), the atlas
   reports every dependency the plan does not allow.

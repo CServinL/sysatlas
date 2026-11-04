@@ -133,6 +133,7 @@ implemented and documented.
 | Component clustering + dependency tiers (cycles merged, single-caller helpers absorbed) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/components.py` |
 | Entry points / env vars / data models / external-system detection | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/parser.py`, `external.py`, `project.py` |
 | Architecture spec + conformance check (`architecture` key in hints) | [`app-spec.md`](app-spec.md), [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/spec.py` |
+| Pattern candidates (structural detectors: layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry, repository, event-driven, client/server, commands) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/patterns.py` |
 | Intent overlay (component purposes, patterns, staleness fingerprints) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/intent.py` |
 | Import-cycle / fan-in-fan-out detection | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/metrics.py` |
 | Multi-view splitting as first-class | [`design-principles.md`](design-principles.md), [`builders.md`](builders.md) §System | `sysatlas/system.py` |
@@ -177,6 +178,7 @@ sysatlas/
 │   ├── components.py           — cluster modules into components, order into dependency tiers
 │   ├── external.py             — import name → external system kind (database, HTTP, queue, ...)
 │   ├── project.py              — [project.scripts] from pyproject.toml
+│   ├── patterns.py             — structural pattern candidates with evidence
 │   ├── spec.py                 — planned architecture (hints `architecture`) + conformance check
 │   ├── intent.py               — intent overlay (purposes, patterns) + staleness fingerprint
 │   └── reflection.py           — Reflection class; to_system_map / to_system / to_atlas / merge_with
