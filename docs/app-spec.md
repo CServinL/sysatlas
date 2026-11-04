@@ -65,6 +65,11 @@ Set out in [`design-principles.md`](design-principles.md). In short:
   generated files can be committed and diffed.
 - **Static analysis only** — reflection never imports or runs the target
   code, so it is safe on broken or uncompiled projects.
+- **The algorithm distills; the LLM judges.** The atlas turns the code into
+  compact, repeatable evidence. It does not decide what the architecture
+  means. Its heuristics (component clustering, module roles, pattern
+  candidates, spec status) are inputs to check against the source, not ground
+  truth. The skills are checklists that keep the LLM from skipping an angle.
 
 ## 5. Constraints
 

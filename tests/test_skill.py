@@ -45,6 +45,7 @@ class BundledSkills(unittest.TestCase):
         text = sysatlas.skill("sysatlas")
         for token in ("atlas", "reflect", "SystemMap", "sysatlas._*", "sysatlas-document"):
             self.assertIn(token, text)
+        self.assertIn("distills; you judge", text)
 
     def test_document_skill_covers_the_workflow(self) -> None:
         text = sysatlas.skill("sysatlas-document")

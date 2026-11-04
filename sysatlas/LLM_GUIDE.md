@@ -40,6 +40,10 @@ patterns whose structure the algorithm found; confirm them by reading the source
 before you record any. If the hints file declares an
 `architecture` spec, the atlas also reports where the code departs from it.
 
+The atlas distills the code into evidence; you make the judgement. Its
+heuristics (component clustering, module roles, pattern candidates, spec
+status) are inputs to check against the source, not ground truth.
+
 The atlas mirrors how the code *is* organized; it says nothing about how it
 *should* be. If the project also has an app spec, read both and flag where
 the code has drifted from the plan.

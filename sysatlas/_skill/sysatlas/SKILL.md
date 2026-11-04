@@ -23,6 +23,11 @@ coupling hotspots, and — if the hints file declares an `architecture` spec —
 whether the code conforms to it. It gives a holistic view without reading
 every file.
 
+The atlas distills; you judge. Treat everything in it as evidence to check
+against the source, including its heuristics: component clustering, module
+roles, pattern candidates and the spec status. Read the source of any module
+your decision depends on.
+
 The atlas shows structure only. It does not say what a component is for; that
 comes from `docs/reflection/intent.json`, which is hand- or LLM-written and
 marked as such. When the atlas lists "Documentation gaps", use the
