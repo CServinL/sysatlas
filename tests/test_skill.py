@@ -51,6 +51,23 @@ class BundledSkills(unittest.TestCase):
         for token in ("Documentation gaps", "intent.json", "fingerprint", "docstring", "patterns"):
             self.assertIn(token, text)
 
+    def test_document_skill_has_a_complete_pattern_checklist(self) -> None:
+        text = sysatlas.skill("sysatlas-document")
+        section = text.split("## Pattern checklist", 1)[1].split("\n## ", 1)[0]
+        rows = [
+            ln for ln in section.splitlines()
+            if ln.startswith("| ") and not ln.startswith("| Pattern") and not ln.startswith("|---")
+        ]
+        self.assertGreaterEqual(len(rows), 10)
+        for row in rows:
+            with self.subTest(row=row[:40]):
+                cells = [c.strip() for c in row.strip("|").split("|")]
+                self.assertEqual(len(cells), 3)
+                self.assertTrue(all(cells))
+        for verdict in ("`present`", "`partial`", "`absent`"):
+            self.assertIn(verdict, section)
+        self.assertIn("Answer every row", section)
+
     def test_unknown_name_is_rejected_with_the_valid_ones(self) -> None:
         for bad in ("nope", "../sysatlas", ""):
             with self.subTest(name=bad):

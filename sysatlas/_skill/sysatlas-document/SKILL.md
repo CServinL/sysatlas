@@ -36,11 +36,10 @@ design patterns it follows. You write that part, from reading the source.
    exactly. Leave entries that are still current alone. Delete entries listed
    under "no longer exist".
 
-4. **Patterns.** Add a pattern to `patterns` only when the code shows it. Name
-   it, say in one sentence how it appears here, and list the components that
-   take part. Examples: layered, pipeline, plugin registry, ports and adapters,
-   repository, fluent builder, state machine, facade, publish and subscribe.
-   If you are not sure, leave it out.
+4. **Patterns.** Go through the pattern checklist below, one entry at a time,
+   and give every entry a verdict. Do not pick patterns from memory. Record
+   only the entries with verdict `present` in `patterns` (name, one sentence
+   on how it appears here, the components that take part).
 
 5. **Summary.** Set `summary` to one short paragraph: what the system is for
    and who uses it.
@@ -48,7 +47,45 @@ design patterns it follows. You write that part, from reading the source.
 6. **Verify.** Regenerate with `intent=`. Components should show as current and
    the gaps list should be empty, or hold only items you chose to skip and
    will tell the user about. Commit the docstrings, `intent.json` and
-   `atlas.md` together.
+   `atlas.md` together. Give the user the list of `partial` verdicts from the
+   checklist, each with its reason.
+
+## Pattern checklist
+
+For each entry, read the modules named in "Look in the atlas", then the source
+of the modules that match. Give one verdict:
+
+- `present` — all the evidence is there. Name the modules that show it.
+- `partial` — some evidence, but not all. Say what is missing. Do not record
+  it in `intent.json`; report it to the user.
+- `absent` — no evidence. Say nothing more.
+
+| Pattern | Evidence (all of it for `present`) | Look in the atlas |
+|---|---|---|
+| Layered | Components fall into tiers, and no dependency points from a lower tier to a higher one | Component dependencies, Import cycles, Spec conformance |
+| Pipeline | Components form a chain; each one passes its output to the next; edges go one way | Component dependencies |
+| Ports and adapters | An abstract base class or protocol in core code, and concrete classes in separate modules that each import an external system | External systems, Packages (role: adapter) |
+| Repository | One class or module owns all reads and writes of a kind of data, and callers never touch the database library | External systems (datastore), Data models |
+| Facade | One module with high fan-in whose functions call into several other components and add no logic of their own | Coupling hotspots |
+| Fluent builder | Methods that return `self` and a final call that builds or saves | Packages (symbols) |
+| Plugin registry | A registry module, and several modules that import it and register themselves, or are found by name | Module adjacency |
+| Strategy | One interface with several interchangeable implementations, and the caller picks one at run time | Packages (symbols) |
+| State machine | An explicit set of states, a transition table or function, and code that rejects invalid transitions | Data models, Packages |
+| Event-driven | Publishers and subscribers that share only an event type or a bus, not each other | Component dependencies (no direct edges) |
+| Client and server | An entry-point component that serves routes, and another component or repository that calls it over HTTP | Entry points, External systems |
+| Command and task queue | Entry points that are CLI commands or background tasks, each calling into the same core components | Entry points |
+| Dependency injection | Dependencies arrive through constructors or function arguments, not through module-level imports of concrete classes | Module adjacency, Packages |
+| Middleware chain | An ordered list of handlers that each wrap the next | Packages (symbols) |
+
+Rules for the checklist:
+
+- Answer every row. A row you skipped is a row you did not check.
+- Evidence means code you read, not names. A class called `Factory` is not a
+  factory pattern.
+- Atlas contradictions beat the pattern's name. An import cycle between two
+  "layers" means the layered verdict is `partial` at best.
+- Patterns that are not in the table (CQRS, saga, MVC, ...) may be recorded
+  when the same standard of evidence is met. Say which modules show them.
 
 ## intent.json
 
@@ -83,4 +120,4 @@ design patterns it follows. You write that part, from reading the source.
 - If the hints file has an `architecture` spec, the atlas reports whether the
   code conforms. Report violations; do not edit the spec to remove them unless
   the user asks.
-- Do not invent a pattern to fill space.
+- Do not invent a pattern to fill space. No evidence means `absent`.
