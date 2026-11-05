@@ -5,7 +5,6 @@ This module holds the class.
 """
 from __future__ import annotations
 
-import fnmatch
 import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -16,7 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sysatlas._reflection.layers import infer_group, infer_layer, layer_rank
 from sysatlas._reflection.parser import ProjectGraph, scan
-from sysatlas._reflection.spec import ArchitectureSpec
+from sysatlas._reflection.spec import ArchitectureSpec, matches_any_glob
 from sysatlas.system_map import SystemMap
 
 if TYPE_CHECKING:
@@ -64,7 +63,7 @@ class Reflection:
         for m in self._graph.modules:
             mod_path = Path(m.path)
             rel = (mod_path.relative_to(root) if mod_path.is_relative_to(root) else mod_path).as_posix()
-            if any(fnmatch.fnmatchcase(rel, pat) or fnmatch.fnmatchcase(m.name, pat) for pat in excludes):
+            if matches_any_glob(m.name, rel, excludes):
                 continue
             kept.append(m)
         return kept

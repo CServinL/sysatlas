@@ -52,6 +52,7 @@ def scan_rust(root: str | Path) -> ProjectGraph:
         modules.append(
             Module(
                 name=modname,
+                language="rust",
                 path=str(p),
                 package="crate",
                 imports=sorted(set(resolved)),

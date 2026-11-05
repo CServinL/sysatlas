@@ -25,6 +25,8 @@ from pydantic import BaseModel, ConfigDict, Field
 MAX_COMPONENT_MODULES = 10
 """Size cap for helper absorption and for inferred packages. Import cycles and hinted groups can exceed it."""
 _EXAMPLES_PER_EDGE = 3
+# Block keys have one prefix per source so equal names cannot overwrite each other:
+# g: group kept whole, p: piece of a split package, m: single module, s: merged by an import cycle.
 
 
 class ComponentCore(BaseModel):
@@ -134,7 +136,7 @@ def _split_oversized(
     exceeds the cap even when there is no further package boundary to split on.
     """
     if len(members) <= MAX_COMPONENT_MODULES:
-        blocks[f"g:{name}"] = _Block(name=name, members=set(members))
+        blocks[f"p:{name}"] = _Block(name=name, members=set(members))
         return
     by_sub: dict[str, list[str]] = {}
     for n in members:

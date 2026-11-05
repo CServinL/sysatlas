@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from sysatlas._reflection.configfile import load_config
 from sysatlas._reflection.reflection import Hints
 
 
@@ -23,16 +24,19 @@ def load_hints(root: str | Path) -> Hints | None:
 
 
 def _parse(path: Path) -> Hints:
-    text = path.read_text(encoding="utf-8")
+    """Read one hints file. Any problem with its content raises a ValueError that names the file."""
     if path.suffix == ".json":
-        data = json.loads(text)
-    else:
-        try:
-            import yaml  # type: ignore
-        except ImportError as e:
-            raise RuntimeError(
-                f"{path.name} found but PyYAML is not installed. "
-                "Install PyYAML or use sysatlas.json instead."
-            ) from e
-        data = yaml.safe_load(text) or {}
-    return Hints(**data)
+        return load_config(path, "hints", json.loads, Hints)
+    try:
+        import yaml  # type: ignore
+    except ImportError as e:
+        raise RuntimeError(
+            f"{path.name} found but PyYAML is not installed. "
+            "Install PyYAML or use sysatlas.json instead."
+        ) from e
+
+    def parse_yaml(text: str):
+        data = yaml.safe_load(text)
+        return {} if data is None else data  # an empty document means no hints; `[]` or `0` is a shape error
+
+    return load_config(path, "hints", parse_yaml, Hints)

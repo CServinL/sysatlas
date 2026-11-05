@@ -14,6 +14,8 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from sysatlas._reflection.configfile import load_config
+
 
 class IntentComponent(BaseModel):
     """What one component is for, plus the fingerprint it was written against."""
@@ -70,7 +72,7 @@ def load_intent(source: "str | Path | dict[str, Any] | Intent | None") -> Intent
     path = Path(source)
     if not path.is_file():
         raise FileNotFoundError(f"intent file not found: {path}")
-    return Intent.model_validate(json.loads(path.read_text(encoding="utf-8")))
+    return load_config(path, "intent", json.loads, Intent)
 
 
 def fingerprint(members: list[tuple[str, list[str]]]) -> str:

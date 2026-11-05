@@ -127,6 +127,11 @@ def _overview(atlas: "Atlas") -> list[str]:
         f"- Import cycles: {atlas.cycle_count}",
         f"- Language: {atlas.language}",
     ]
+    if atlas.shadowed_files:
+        lines.append(
+            f"- Note: {len(atlas.shadowed_files)} file(s) share a module name with another file "
+            f"and were left out: " + _list([f"`{f}`" for f in atlas.shadowed_files], _NAMES_PER_LINE)
+        )
     return lines
 
 
@@ -275,16 +280,27 @@ def _conformance(atlas: "Atlas") -> list[str]:
         lines += _table(["rule", "from", "to", "edges", "examples"], rows)
         lines += _more(len(c.violations), _VIOLATION_ROWS)
     if c.unmapped_modules:
-        shown = c.unmapped_modules[:_GAP_ITEMS]
         lines += [
             "",
             f"Modules no spec component claims ({len(c.unmapped_modules)}; imports to and from "
             "them are not checked): "
-            + ", ".join(f"`{n}`" for n in shown)
-            + (f", … +{len(c.unmapped_modules) - len(shown)}" if len(c.unmapped_modules) > len(shown) else ""),
+            + _list([f"`{n}`" for n in c.unmapped_modules], _GAP_ITEMS),
         ]
     if c.empty_components:
-        lines += ["", "Spec components with no modules: " + _list(c.empty_components, _GAP_ITEMS)]
+        lines += ["", "Spec components whose globs match no module: " + _list(c.empty_components, _GAP_ITEMS)]
+    if c.shadowed_components:
+        lines += [
+            "",
+            "Spec components whose modules an earlier component already owns (declaration order is "
+            "precedence; declare the more specific component first): "
+            + _list(c.shadowed_components, _GAP_ITEMS),
+        ]
+    if c.ambiguous_modules:
+        lines += [
+            "",
+            f"Modules claimed by more than one spec component, the first one wins ({len(c.ambiguous_modules)}): "
+            + _list([f"`{n}`" for n in c.ambiguous_modules], _GAP_ITEMS),
+        ]
     return lines + [""]
 
 

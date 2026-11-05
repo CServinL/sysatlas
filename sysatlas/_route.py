@@ -78,6 +78,8 @@ def route_edges(
     label_zones = label_zones or []
     block_zones = block_zones or []
     node_heights = node_heights or {}
+    if not nodes_pos:
+        return {}  # nothing to route around or between
     NW, NH = node_size
     bboxes = {n: (x, y, x + NW, y + node_heights.get(n, NH)) for n, (x, y) in nodes_pos.items()}
 

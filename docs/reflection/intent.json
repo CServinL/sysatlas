@@ -57,12 +57,16 @@
         "Shared engine with specialized pipelines"
       ]
     },
+    "configfile": {
+      "purpose": "Reads a configuration file the user maintains (hints, intent) into a validated model. Any failure becomes one ValueError that names the file.",
+      "fingerprint": "f5c8e6c6e075"
+    },
     "parser": {
-      "purpose": "Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and environment reads.",
+      "purpose": "Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and environment reads. Names are resolved in the lexical scope they are written in (scopes.py), so a local import or parameter never changes what a name means elsewhere. When two files share a module name the package's __init__.py wins.",
       "patterns": [
         "Deterministic generated artifact"
       ],
-      "fingerprint": "0ca9a56caf5c"
+      "fingerprint": "85ed837fbd4c"
     },
     "patterns": {
       "purpose": "Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry, repository, event-driven, client and server, commands) and reports each with its evidence. Candidates only: it does not decide whether a pattern is really used.",
@@ -83,8 +87,8 @@
       ]
     },
     "spec": {
-      "purpose": "Holds the planned architecture from the hints file and checks the code's import edges against it.",
-      "fingerprint": "278cc49c0dbd"
+      "purpose": "Holds the planned architecture from the hints file and checks the code against it: forbidden dependencies, layer order, unmapped modules, components that match nothing or are shadowed by an earlier one. Declaration order is precedence.",
+      "fingerprint": "6cba3cf49478"
     },
     "system": {
       "purpose": "Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-view references. Builds on SystemMap.",

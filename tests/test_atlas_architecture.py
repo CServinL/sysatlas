@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import json
 import re
-import tempfile
 import textwrap
 import unittest
 from unittest import mock
 from pathlib import Path
 
 import sysatlas
+from tmpdirs import mkdtemp
 from sysatlas._reflection import project as project_module
 from sysatlas._reflection.intent import Intent
 from sysatlas._reflection.reflection import Hints
@@ -18,7 +18,7 @@ from sysatlas._reflection.spec import ArchitectureSpec
 
 
 def _tree(files: dict[str, str], pyproject: str = "") -> Path:
-    base = Path(tempfile.mkdtemp())
+    base = Path(mkdtemp())
     root = base / "pkg"
     root.mkdir()
     (root / "__init__.py").write_text("")
@@ -469,7 +469,7 @@ class IntentOverlay(unittest.TestCase):
 
     def test_loads_from_file_and_rejects_bad_input(self) -> None:
         root = _tree(self.FILES)
-        good = Path(tempfile.mkdtemp()) / "intent.json"
+        good = Path(mkdtemp()) / "intent.json"
         good.write_text(json.dumps({"summary": "From a file."}))
         self.assertIn("From a file.", _reflect(root).to_atlas(intent=good))
         self.assertEqual(Intent.model_validate_json(good.read_text()).summary, "From a file.")
@@ -493,8 +493,8 @@ class Sections(unittest.TestCase):
         self.assertIn("more_", text)
 
 
-class ReviewRegressions(unittest.TestCase):
-    """Defects found in review of the architecture mapper."""
+class DetectorInputs(unittest.TestCase):
+    """Inputs that fooled the architecture facts: lookalike decorators, stores, globs, tables, references."""
 
     def test_stale_marker_survives_a_long_purpose(self) -> None:
         r = _reflect(_tree({"a.py": "def f(): ...\n"}))
@@ -642,7 +642,7 @@ class ImportResolution(unittest.TestCase):
     """Parser fixes found by running the atlas on real repositories."""
 
     def test_namespace_package_root_resolves_its_own_imports(self) -> None:
-        base = Path(tempfile.mkdtemp())
+        base = Path(mkdtemp())
         root = base / "app"  # no __init__.py: an implicit namespace package
         (root / "web").mkdir(parents=True)
         (root / "web" / "views.py").write_text("from app.core import logic\nimport rich\n")
@@ -658,7 +658,7 @@ class ImportResolution(unittest.TestCase):
         self.assertEqual(model.libraries, ["rich"])
 
     def test_container_root_is_not_given_a_prefix(self) -> None:
-        base = Path(tempfile.mkdtemp())
+        base = Path(mkdtemp())
         root = base / "src"
         (root / "pkg").mkdir(parents=True)
         (root / "pkg" / "__init__.py").write_text("")
@@ -682,8 +682,8 @@ class ImportResolution(unittest.TestCase):
         self.assertEqual(graph["pkg.sub.a"].imports, ["pkg.sub", "pkg.sub.b", "pkg.top"])
 
 
-class CopilotReviewRegressions(unittest.TestCase):
-    """Defects found by the Copilot review of PR 6, with their siblings."""
+class ParsingAndGrouping(unittest.TestCase):
+    """Oversized packages, container roots, aliased and dotted names, decorators imported by name, path globs."""
 
     def _model(self, files: dict[str, str]):
         return _reflect(_tree(files)).to_atlas_model()
@@ -704,7 +704,7 @@ class CopilotReviewRegressions(unittest.TestCase):
         self.assertIn("big.a.c", names)
 
     def test_checkout_directory_named_like_its_package_keeps_container_naming(self) -> None:
-        base = Path(tempfile.mkdtemp())
+        base = Path(mkdtemp())
         root = base / "pkg"  # repository checkout
         (root / "pkg").mkdir(parents=True)  # the package itself
         (root / "pkg" / "__init__.py").write_text("")
@@ -768,8 +768,8 @@ class CopilotReviewRegressions(unittest.TestCase):
         self.assertEqual([m.name for m in kept], ["p.keep"])
 
 
-class SecondCopilotRegressions(unittest.TestCase):
-    """Defects found by the second Copilot review of PR 6, with their siblings."""
+class ScopesAndEvidence(unittest.TestCase):
+    """Names resolve in the scope they are written in; groups, prefixes and facts need real evidence."""
 
     def _model(self, files: dict[str, str], hints: Hints | None = None, **kw):
         return _reflect(_tree(files), hints).to_atlas_model(**kw)
@@ -827,7 +827,7 @@ class SecondCopilotRegressions(unittest.TestCase):
         self.assertGreater(len(inferred.components), 1)
 
     def test_import_examples_in_docstrings_do_not_rename_modules(self) -> None:
-        base = Path(tempfile.mkdtemp())
+        base = Path(mkdtemp())
         root = base / "src"
         (root / "pkg").mkdir(parents=True)
         (root / "pkg" / "__init__.py").write_text("")
@@ -874,6 +874,227 @@ class SecondCopilotRegressions(unittest.TestCase):
     def test_route_path_given_as_the_flask_rule_keyword(self) -> None:
         model = self._model({"w.py": "from flask import Flask\napp = Flask(__name__)\n@app.route(rule='/x')\ndef x(): ...\n"})
         self.assertEqual(next(x for x in model.modules if x.name == "pkg.w").entry_points, ["route /x"])
+
+
+class RobustnessAndStatus(unittest.TestCase):
+    """Key collisions, language, namespace evidence, env scopes, conformance status, hostile source files."""
+
+    def _model(self, files: dict[str, str], hints: Hints | None = None, **kw):
+        return _reflect(_tree(files), hints).to_atlas_model(**kw)
+
+    def test_a_declared_group_named_like_an_inferred_subgroup_keeps_every_module(self) -> None:
+        files = {f"big/sub/m{i}.py": "X = 1\n" for i in range(10)}
+        files.update({"big/one.py": "X = 1\n", "extra.py": "X = 1\n"})
+        model = self._model(files, Hints(group={"pkg.extra": "big.sub"}))
+        names = [c.name for c in model.components]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(sum(c.module_count for c in model.components), model.module_count)
+        self.assertEqual(model.module_count, 12)
+
+    def test_a_python_package_named_crate_is_python(self) -> None:
+        base = Path(mkdtemp())
+        root = base / "crate"
+        root.mkdir()
+        (root / "__init__.py").write_text("")
+        (root / "a.py").write_text("X = 1\n")
+        self.assertEqual(sysatlas.reflect(root, hints=Hints()).to_atlas_model().language, "python")
+
+    def test_an_import_that_may_be_the_stdlib_is_not_namespace_evidence(self) -> None:
+        base = Path(mkdtemp())
+        root = base / "code"  # also a standard-library module name
+        (root / "pkg").mkdir(parents=True)
+        (root / "pkg" / "__init__.py").write_text("")
+        (root / "pkg" / "a.py").write_text("import code\nfrom code import interact\nfrom pkg import b\n")
+        (root / "pkg" / "b.py").write_text("X = 1\n")
+        graph = sysatlas.reflect(root, hints=Hints()).graph.by_name()
+        self.assertEqual(sorted(graph), ["pkg", "pkg.a", "pkg.b"])
+        self.assertIn("pkg.b", graph["pkg.a"].imports)
+
+    def test_environment_reads_resolve_in_their_own_scope(self) -> None:
+        model = self._model({
+            "e.py": '''
+                import os
+                from os import environ as env, getenv as ge
+
+                top = env["TOP"]
+
+                def read_dict(env):
+                    return env["PARAM_NOT_CONFIG"]
+
+                def local_shadow():
+                    env = {}
+                    return env["LOCAL_NOT_CONFIG"]
+
+                def helper():
+                    from os import environ as e2
+                    return e2["HELPER"]
+
+                def other(e2):
+                    return e2["OTHER_NOT_CONFIG"]
+
+                def nested():
+                    from os import getenv as g
+                    def inner():
+                        return g("NESTED")
+                    return inner
+
+                squares = [env["COMP_NOT_CONFIG"] for env in rows]
+                pick = lambda env: env["LAMBDA_NOT_CONFIG"]
+                again = lambda: env["LAMBDA_CLOSURE"]
+
+                class C:
+                    from os import environ as cls_env
+                    attr = cls_env["CLASS_BODY"]
+                    def method(self):
+                        return cls_env["CLASS_NOT_VISIBLE"]
+
+                walrus = ge("VIA_ALIAS")
+            ''',
+            "p.py": "import os.path\nx = os.environ['VIA_OS_PATH']\n",
+        })
+        self.assertEqual(
+            [v.name for v in model.env_vars],
+            ["CLASS_BODY", "HELPER", "LAMBDA_CLOSURE", "NESTED", "TOP", "VIA_ALIAS", "VIA_OS_PATH"],
+        )
+
+    def test_conformance_status_counts_a_missing_planned_component(self) -> None:
+        spec = ArchitectureSpec.model_validate({"components": [
+            {"name": "core", "modules": ["pkg.*"]},
+            {"name": "worker", "modules": ["pkg.worker.*"]},
+        ]})
+        model = self._model({"a.py": "X = 1\n"}, Hints(architecture=spec))
+        self.assertEqual(model.conformance.empty_components, ["worker"])
+        self.assertFalse(model.conformance.ok)
+        self.assertIn("departs from the spec", model.to_markdown())
+
+    def test_modules_claimed_by_two_components_are_reported(self) -> None:
+        spec = ArchitectureSpec.model_validate({"components": [
+            {"name": "all", "modules": ["pkg.*"]},
+            {"name": "special", "modules": ["pkg.a"]},
+        ]})
+        model = self._model({"a.py": "X = 1\n", "b.py": "X = 1\n"}, Hints(architecture=spec))
+        self.assertEqual(model.conformance.ambiguous_modules, ["pkg.a"])
+        self.assertIn("claimed by more than one spec component", model.to_markdown())
+
+    def test_files_left_out_for_sharing_a_module_name_are_reported(self) -> None:
+        root = _tree({"a.py": "class FromFile: ...\n", "a/__init__.py": "class FromPackage: ...\n"})
+        model = sysatlas.reflect(root, hints=Hints()).exclude("__init__.py").to_atlas_model()
+        self.assertEqual(len(model.shadowed_files), 1)
+        self.assertIn("share a module name", model.to_markdown())
+        clean = self._model({"a.py": "X = 1\n"})
+        self.assertEqual(clean.shadowed_files, [])
+        self.assertNotIn("share a module name", clean.to_markdown())
+
+    def test_labels_stay_unique_when_renames_collide(self) -> None:
+        # renaming a and b to the same name makes both fall back to their dotted names, which
+        # equal the new name of c: the fallback itself must not produce a duplicate
+        hints = Hints(rename={"pkg.a": "x", "pkg.b": "x", "pkg.c": "pkg.a", "pkg.d.a": "a"})
+        model = self._model({"a.py": "X = 1\n", "b.py": "X = 1\n", "c.py": "X = 1\n", "d/a.py": "X = 1\n"}, hints)
+        labels = [m.label for m in model.modules]
+        self.assertEqual(len(labels), 4)
+        self.assertEqual(len(labels), len(set(labels)))
+
+    def test_a_source_file_nested_too_deep_does_not_abort_the_scan(self) -> None:
+        files = {"deep.py": "class Deep: ...\nx = " + "+".join(["1"] * 6000) + "\n", "ok.py": "class Ok: ...\n"}
+        model = self._model(files)
+        by = {m.name.split(".")[-1]: m for m in model.modules}
+        self.assertEqual(by["ok"].classes, ["Ok"])
+        self.assertTrue(by["deep"].classes == ["Deep"] or by["deep"].unparsed)
+
+    def test_a_byte_order_mark_and_a_coding_declaration_do_not_hide_symbols(self) -> None:
+        root = _tree({})
+        (root / "bom.py").write_bytes(b"\xef\xbb\xbfclass FromBom: ...\n")
+        (root / "latin.py").write_bytes(b"# -*- coding: latin-1 -*-\nname = '\xe9'\nclass Latin: ...\n")
+        by = {m.name.split(".")[-1]: m for m in _reflect(root).to_atlas_model().modules}
+        self.assertEqual((by["bom"].classes, by["bom"].unparsed), (["FromBom"], False))
+        self.assertEqual((by["latin"].classes, by["latin"].unparsed), (["Latin"], False))
+
+
+    def test_environment_scope_edge_cases(self) -> None:
+        model = self._model({
+            "e.py": """
+                import os
+                from os import environ
+                from typing import TYPE_CHECKING
+
+                def walrus():
+                    [(environ := {}) for _ in range(1)]
+                    return environ["WALRUS_NOT_CONFIG"]
+
+                def first_iterable():
+                    return [k for environ in environ["FIRST_ITERABLE"]]
+
+                class C:
+                    from os import environ as e
+                    f = lambda self: e["LAMBDA_IN_CLASS_NOT_VISIBLE"]
+                    g = [e["COMP_IN_CLASS_NOT_VISIBLE"] for _ in range(1)]
+                    h = [x for x in e["COMP_FIRST_ITERABLE_IN_CLASS"]]
+
+                def init():
+                    global np_env
+                    from os import environ as np_env
+
+                def later():
+                    return np_env["GLOBAL_IMPORT"]
+
+                if TYPE_CHECKING:
+                    x = os.environ["TYPE_ONLY_NOT_CONFIG"]
+
+                def annotated(a: os.environ["ANNOTATION"]) -> os.environ["RETURN"]: ...
+            """,
+        })
+        self.assertEqual(
+            [v.name for v in model.env_vars],
+            ["ANNOTATION", "COMP_FIRST_ITERABLE_IN_CLASS", "FIRST_ITERABLE", "GLOBAL_IMPORT", "RETURN"],
+        )
+
+    def test_a_class_level_import_reaches_its_methods_decorators_only(self) -> None:
+        model = self._model({
+            "c.py": """
+                import click
+
+                class C:
+                    from click import command as cmd
+
+                    @cmd()
+                    def method(self):
+                        @cmd()
+                        def inner(): ...
+                        return inner
+            """,
+        })
+        self.assertEqual(next(m for m in model.modules if m.name == "pkg.c").entry_points, ["cli method"])
+
+    def test_a_component_shadowed_by_an_earlier_one_is_reported_as_such(self) -> None:
+        spec = ArchitectureSpec.model_validate({"components": [
+            {"name": "all", "modules": ["pkg.*"]},
+            {"name": "special", "modules": ["pkg.a"]},
+        ]})
+        c = self._model({"a.py": "X = 1\n", "b.py": "X = 1\n"}, Hints(architecture=spec)).conformance
+        self.assertEqual((c.empty_components, c.shadowed_components), ([], ["special"]))
+        self.assertFalse(c.ok)
+        text = self._model({"a.py": "X = 1\n", "b.py": "X = 1\n"}, Hints(architecture=spec)).to_markdown()
+        self.assertIn("an earlier component already owns", text)
+        self.assertNotIn("match no module", text)
+
+    def test_overlapping_components_are_precedence_not_a_departure(self) -> None:
+        spec = ArchitectureSpec.model_validate({"components": [
+            {"name": "specific", "modules": ["pkg.a"]},
+            {"name": "rest", "modules": ["pkg.*"]},
+        ]})
+        root = _tree({"a.py": "X = 1\n", "b.py": "X = 1\n"})
+        c = _reflect(root, Hints(architecture=spec)).to_atlas_model().conformance
+        self.assertEqual((c.ambiguous_modules, c.shadowed_components, c.empty_components), (["pkg.a"], [], []))
+
+    def test_the_package_wins_when_two_files_share_a_module_name(self) -> None:
+        root = _tree({
+            "a.py": "from pydantic import BaseModel\nclass FromFile(BaseModel): ...\n",
+            "a/__init__.py": "from pydantic import BaseModel\nclass FromPackage(BaseModel): ...\nclass Other(BaseModel): ...\n",
+        })
+        model = sysatlas.reflect(root, hints=Hints()).exclude("__init__.py").to_atlas_model()
+        kept = next(m for m in model.modules if m.name == "pkg.a")
+        self.assertEqual((kept.classes, kept.models), (["FromPackage", "Other"], ["FromPackage", "Other"]))
+        self.assertEqual(model.shadowed_files, ["a.py"])
 
 
 class UnboundedSections(unittest.TestCase):

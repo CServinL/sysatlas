@@ -88,6 +88,8 @@ sysatlas/
     ├── external.py        — import name → external system kind
     ├── project.py         — [project.scripts] from pyproject.toml
     ├── patterns.py        — structural pattern candidates with evidence
+    ├── scopes.py          — lexical scopes: import bindings and environment reads per scope
+    ├── configfile.py      — read hints / intent files into models; one ValueError naming the file
     ├── spec.py            — planned architecture + conformance check
     ├── intent.py          — intent overlay + staleness fingerprint
     └── merge.py           — round-trip merge with a blueprint SystemMap
@@ -195,6 +197,17 @@ the feature in anger:
   flat package of unrelated modules with no imports between them stays one
   component per module. `intent.json` and the `architecture` spec are the
   corrective for that.
+- **Bad configuration fails loudly, bad ancillary files do not** — a malformed
+  `sysatlas.json` / `sysatlas.yaml` or `intent=` file (unreadable, not UTF-8, invalid
+  syntax, wrong shape, or failing validation) raises one `ValueError` that names the
+  file; a `pyproject.toml` that cannot be read or parsed (read only for
+  `[project.scripts]`) is ignored.
+- **Spec precedence** — in the `architecture` spec a module belongs to the first
+  component whose glob matches it. A component matching nothing, or only modules an
+  earlier component owns, makes the status "departs from the spec"; a module matched
+  by several components is listed but is not a departure.
+- **Two files with one module name** (`a.py` and `a/__init__.py`) — the package wins,
+  as in Python's import; the other file is listed in the atlas as left out.
 - **Stdlib list comes from the running interpreter** — `external.py` uses
   `sys.stdlib_module_names`, so a module added to the stdlib in a later Python
   (e.g. `tomllib`) is listed as a third-party library when the atlas is

@@ -48,6 +48,8 @@ def compute_sequence_layout(diagram):
 
     frame_rects: list[dict] = []
     for f in diagram.frames:
+        if not actor_x:
+            break  # a frame spans actors; with none there is nothing to draw it around
         y0 = msg_y.get(f.start_order, base_y) - FRAME_PAD_Y - FRAME_HEADER_H
         y1 = msg_y.get(f.end_order, last_y) + FRAME_PAD_Y
         actors_in_range = {

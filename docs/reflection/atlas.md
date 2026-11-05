@@ -6,9 +6,9 @@
 
 sysatlas is a Python library for architecture diagrams. Pydantic-backed builders describe a system, and a layout and routing engine renders it as interactive draw.io HTML. A reverse flow reads existing code and produces the same diagrams, plus a deterministic text atlas of the architecture. Only the names exported from the root package are public; modules that start with an underscore are private.
 
-- Modules: 50
-- Components: 23
-- Internal import edges: 70
+- Modules: 52
+- Components: 24
+- Internal import edges: 73
 - Packages: 7
 - Import cycles: 2
 - Language: python
@@ -22,23 +22,24 @@ A component is a cluster of modules that acts as one unit: modules that import e
 | `bpmn_map` | 0 | builders | 1 (74 loc) | logic×1 | Fluent builder for BPMN process diagrams. Hands layout and rendering to the BPMN pipeline. | _render, bpmn-pipeline, diagram-types | — |
 | `class_map` | 0 | builders | 1 (196 loc) | logic×1 | Fluent builder for UML class diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `er_map` | 0 | builders | 1 (156 loc) | logic×1 | Fluent builder for entity-relationship diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
-| `reflection` | 0 | reflection | 10 (1811 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | diagram-types, external, parser, patterns, project, resolve +3 | — |
+| `reflection` | 0 | reflection | 10 (1845 loc) | logic×10 | The reflection engine: the Reflection object, hints, graph metrics, component clustering, layer rules, the atlas model and its Markdown wri… | configfile, diagram-types, external, parser, patterns, project +4 | — |
 | `sequence_map` | 0 | builders | 1 (77 loc) | logic×1 | Fluent builder for UML sequence diagrams. Hands layout and rendering to the sequence pipeline. | _render, diagram-types, sequence-pipeline | — |
 | `state_map` | 0 | builders | 1 (168 loc) | logic×1 | Fluent builder for state machine diagrams. Uses the shared layered engine for layout. | _render, diagram-types | — |
 | `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
 | `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
-| `parser` | 1 | reflection | 1 (557 loc) | logic×1 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
+| `configfile` | 1 | reflection | 1 (18 loc) | logic×1 | Reads a configuration file the user maintains (hints, intent) into a validated model. Any failure becomes one ValueError that names the fil… | — | — |
+| `parser` | 1 | reflection | 2 (739 loc) | logic×2 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
 | `patterns` | 1 | reflection | 1 (281 loc) | logic×1 | Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry… | external | — |
-| `project` | 1 | reflection | 1 (35 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
-| `sequence-pipeline` | 1 | layout | 2 (224 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
-| `spec` | 1 | reflection | 1 (107 loc) | logic×1 | Holds the planned architecture from the hints file and checks the code's import edges against it. | — | — |
+| `project` | 1 | reflection | 1 (42 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
+| `sequence-pipeline` | 1 | layout | 2 (226 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
+| `spec` | 1 | reflection | 1 (125 loc) | logic×1 | Holds the planned architecture from the hints file and checks the code against it: forbidden dependencies, layer order, unmapped modules, c… | — | — |
 | `system` | 1 | builders | 1 (196 loc) | logic×1 | Multi-view architecture description (ISO 42010): views, viewpoints, stakeholders, and trace links across views, with stub nodes for cross-v… | _render, _trace_matrix, cross-cutting, system_map | — |
 | `tree-pipeline` | 1 | layout | 2 (204 loc) | logic×2 | Lays out tree diagrams and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render | — |
 | `_trace_matrix` | 2 | render | 1 (109 loc) | logic×1 | Renders trace links between components as an HTML matrix of sources by targets. | cross-cutting | — |
 | `external` | 2 | reflection | 1 (72 loc) | logic×1 | Maps import names to kinds of external system: database, HTTP, queue, cloud, model API. | — | — |
 | `resolve` | 2 | reflection | 1 (17 loc) | logic×1 | Decides whether an import target lives inside the scanned tree. | — | — |
 | `system_map` | 2 | builders | 1 (93 loc) | logic×1 | Fluent builder for one architecture diagram. Hands the finished diagram to the layout and render engine. | _render, diagram-types | — |
-| `_render` | 3 | layout | 6 (2270 loc) | logic×6 | The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on… | _vendor | — |
+| `_render` | 3 | layout | 6 (2272 loc) | logic×6 | The layered layout and edge-routing engine, and the writer of mxGraph XML and viewer HTML. Every builder depends on it; it depends only on… | _vendor | — |
 | `diagram-types` | 3 | ontology | 7 (427 loc) | model×7 | Pydantic schemas for each diagram kind: architecture, BPMN, ER, sequence, state machine, tree and UML class. Data only; no layout or render… | cross-cutting | — |
 | `_vendor` | 4 | infra | 1 (31 loc) | logic×1 | Finds the draw.io viewer script, downloading and caching it when it is missing. | — | — |
 | `cross-cutting` | 4 | ontology | 5 (332 loc) | model×3, logic×1, support×1 | Schemas that apply across diagram kinds: ISO 42010 architecture description, trace links, quality attributes and the model-kind taxonomy. | — | — |
@@ -46,7 +47,7 @@ A component is a cluster of modules that acts as one unit: modules that import e
 ## Component dependencies
 
 - **tier 0**: bpmn_map, class_map, er_map, reflection, sequence_map, state_map, tree_map
-- **tier 1**: bpmn-pipeline, parser, patterns, project, sequence-pipeline, spec, system, tree-pipeline
+- **tier 1**: bpmn-pipeline, configfile, parser, patterns, project, sequence-pipeline, spec, system, tree-pipeline
 - **tier 2**: _trace_matrix, external, resolve, system_map
 - **tier 3**: _render, diagram-types
 - **tier 4**: _vendor, cross-cutting
@@ -80,7 +81,7 @@ _Found from structure alone. Each is a candidate to confirm by reading the sourc
 
 | pattern | evidence | components |
 |---|---|---|
-| Layered | 5 dependency tiers over 23 components; 2 import cycle(s) merged into components, which weakens the layering | — |
+| Layered | 5 dependency tiers over 24 components; 2 import cycle(s) merged into components, which weakens the layering | — |
 | Fluent builder | BPMNMap (bpmn_map); ClassMap (class_map); ERMap (er_map); SequenceMap (sequence_map); System (system); … +1 more | bpmn_map, class_map, er_map, sequence_map, system, system_map |
 
 ## Architectural patterns
@@ -99,7 +100,7 @@ _From the hints file or from module names; not derived from imports._
 - **layout** (8): _bpmn_layout, _connectors, _hub_layout, _layout, _place, _route, _sequence_layout, _tree_layout
 - **ontology** (12): architecture, bpmn, er, iso42010, model_kind, model_kinds, qualities, sequence, state_machine, trace, tree, uml_class
 - **builders** (8): bpmn_map, class_map, er_map, sequence_map, state_map, system, system_map, tree_map
-- **reflection** (16): atlas, atlas_render, components, external, hints, intent, layers, merge, metrics, parser, parser_rust, patterns, project, reflection, resolve, spec
+- **reflection** (18): atlas, atlas_render, components, configfile, external, hints, intent, layers, merge, metrics, parser, parser_rust, patterns, project, reflection, resolve, scopes, spec
 - **infra** (1): _vendor
 
 ## Packages
@@ -125,26 +126,28 @@ _From the hints file or from module names; not derived from imports._
 | `system_map` | Fluent builder for one architecture diagram (`SystemMap`): components, groups, connection… | logic | m | SystemMap | 2 | 3 |
 | `tree_map` | Fluent builder for a tree diagram (org chart, mindmap, taxonomy, …). | logic | s | TreeMap | 3 | 0 |
 
-### _reflection — 16 module(s)
+### _reflection — 18 module(s)
 
 | module | purpose | role | size | symbols | out | in |
 |---|---|---|---|---|---|---|
 | `atlas` | Deterministic "architecture atlas" model from a Reflection. | logic | xl | Atlas, AtlasComponent, AtlasComponentEdge, AtlasCrossPackage, AtlasCycle, AtlasEntryPoint… | 10 | 1 |
 | `atlas_render` | Markdown rendering of an Atlas. Pure function of the model; no I/O. | logic | l | render_markdown() | 0 | 1 |
 | `components` | Group modules into architectural components and order them by dependency. | logic | l | ComponentCore, ComponentEdge, ComponentGraph, compute_components() | 0 | 1 |
+| `configfile` | Read a configuration file the user maintains (hints, intent) into a validated model. | logic | xs | load_config() | 0 | 2 |
 | `external` | Which imports mean "the system talks to something outside itself". | logic | s | classify_external(), external_roots() | 0 | 3 |
-| `hints` | Load an optional sysatlas hints file from the scan root. | logic | s | load_hints() | 1 | 1 |
-| `intent` | The human / LLM-authored layer: what components are for and which patterns they follow. | logic | s | Intent, IntentComponent, IntentPattern, fingerprint(), load_intent() | 0 | 1 |
+| `hints` | Load an optional sysatlas hints file from the scan root. | logic | s | load_hints() | 2 | 1 |
+| `intent` | The human / LLM-authored layer: what components are for and which patterns they follow. | logic | s | Intent, IntentComponent, IntentPattern, fingerprint(), load_intent() | 1 | 1 |
 | `layers` | Heuristic: top-level package segment → architectural layer name. | logic | s | infer_group(), infer_layer(), layer_rank() | 0 | 2 |
 | `merge` | Merge a user-authored 'annotation overlay' SystemMap onto reflected structure. | logic | s | merge_overlay() | 2 | 1 |
 | `metrics` | Graph metrics over a kept module set: fan-in/out, import cycles, cross-package edges. | logic | m | CrossPackageEdge, GraphMetrics, ModuleMetrics, compute_metrics() | 1 | 1 |
-| `parser` | AST-only scanner. Reads a Python source tree without importing it. | logic | xl | ClassLink, Module, ProjectGraph, scan() | 2 | 4 |
+| `parser` | AST-only scanner. Reads a Python source tree without importing it. | logic | l | ClassLink, Module, ProjectGraph, module_preference(), read_and_parse(), scan() | 3 | 4 |
 | `parser_rust` | tree-sitter Rust scanner. Reads a Rust source tree without compiling it. | logic | m | scan_rust() | 2 | 1 |
 | `patterns` | Architectural pattern candidates found from structure alone. | logic | l | PatternCandidate, detect_patterns() | 1 | 1 |
 | `project` | Project metadata that lives next to the source: console scripts from pyproject.toml. | logic | s | console_scripts() | 0 | 1 |
 | `reflection` | Reflection: code -> SystemMap. | logic | l | Hints, Reflection, reflect(), reflect_rust() | 9 | 1 |
 | `resolve` | Decide whether an import target lives inside the scanned tree. | logic | xs | resolve_import() | 0 | 2 |
-| `spec` | Intended architecture, declared by people, and a check of the code against it. | logic | m | ArchitectureSpec, Conformance, SpecComponent, SpecViolation, check_conformance() | 0 | 2 |
+| `scopes` | Lexical scopes of a Python module: which import binding a name refers to, and environment… | logic | l | absolute_from(), env_reads(), import_bindings(), is_type_checking(), scope_maps(), walk_r… | 0 | 1 |
+| `spec` | Intended architecture, declared by people, and a check of the code against it. | logic | m | ArchitectureSpec, Conformance, SpecComponent, SpecViolation, check_conformance(), matches… | 0 | 2 |
 
 ### bpmn-pipeline — 2 module(s)
 
@@ -211,14 +214,15 @@ Module adjacency (fan-in + fan-out ≥ 3):
 - **_render** → _hub_layout, _layout, _vendor
 - **atlas** → atlas_render, components, external, intent, layers, metrics, parser, patterns, project, spec
 - **reflection** → atlas, hints, layers, merge, parser, parser_rust, spec, system, system_map
+- **parser** → external, resolve, scopes
 - **_layout** → _connectors, _place, _render, _route
-- **parser** → external, resolve
 - **system** → iso42010, trace, _render, _trace_matrix, system_map
 - **system_map** → architecture, _render
 - **_bpmn_render** → _bpmn_layout, _render
 - **architecture** → qualities
 - **iso42010** → model_kind, model_kinds
 - **external** → —
+- **hints** → configfile, reflection
 - **merge** → architecture, system_map
 - **parser_rust** → parser, resolve
 - **_sequence_render** → _render, _sequence_layout
@@ -245,8 +249,8 @@ Module adjacency (fan-in + fan-out ≥ 3):
 | `_render` | 12 | 3 |
 | `atlas` | 1 | 10 |
 | `reflection` | 1 | 9 |
+| `parser` | 4 | 3 |
 | `_layout` | 2 | 4 |
-| `parser` | 4 | 2 |
 | `system` | 1 | 5 |
 | `system_map` | 3 | 2 |
 | `_bpmn_render` | 1 | 2 |

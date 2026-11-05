@@ -24,7 +24,7 @@ from sysatlas._reflection.external import KINDS_AS_ADAPTER, classify_external
 from sysatlas._reflection.intent import Intent, fingerprint, load_intent
 from sysatlas._reflection.layers import layer_rank
 from sysatlas._reflection.metrics import ROOT_GROUP, compute_metrics
-from sysatlas._reflection.parser import ClassLink
+from sysatlas._reflection.parser import ClassLink, module_preference, read_and_parse
 from sysatlas._reflection.patterns import PatternCandidate, detect_patterns
 from sysatlas._reflection.project import console_scripts
 from sysatlas._reflection.spec import Conformance, check_conformance
@@ -38,15 +38,24 @@ _SIZE_BUCKETS = ((20, "xs"), (75, "s"), (200, "m"), (500, "l"))
 _HOTSPOT_LIMIT = 10
 
 
-def _dedupe_by_name(modules: "list[Module]") -> "list[Module]":
+def _dedupe_by_name(modules: "list[Module]") -> "tuple[list[Module], list[Module]]":
     """Collapse modules that share a dotted name (e.g. Rust `main.rs` + `lib.rs`
-    both mapping to `crate`), keeping the larger one so metrics stay coherent."""
+    both mapping to `crate`, or `a.py` and `a/__init__.py`): a package's `__init__.py` wins,
+    else the larger file, as in the parser. Returns the kept modules and the ones left out."""
     best: dict[str, Module] = {}
     for m in modules:
         cur = best.get(m.name)
-        if cur is None or (m.loc, m.path) > (cur.loc, cur.path):
+        if cur is None or module_preference(m) > module_preference(cur):
             best[m.name] = m
-    return list(best.values())
+    kept_paths = {m.path for m in best.values()}
+    return list(best.values()), sorted((m for m in modules if m.path not in kept_paths), key=lambda m: m.path)
+
+
+def _rel_path(path: str, root: Path) -> str:
+    try:
+        return Path(path).relative_to(root).as_posix()
+    except ValueError:
+        return Path(path).name
 
 
 def _size_bucket(loc: int) -> str:
@@ -230,6 +239,8 @@ class Atlas(BaseModel):
     cycle_count: int
     truncated: bool
     max_modules: int
+    shadowed_files: list[str] = Field(default_factory=list)
+    """Files left out because another file has the same module name (`a.py` and `a/__init__.py`), as paths under the root."""
     summary: str = ""
     """System summary from the intent overlay."""
     components: list[AtlasComponent] = Field(default_factory=list)
@@ -266,10 +277,10 @@ def build_atlas_model(
     intent: "str | Path | dict[str, Any] | Intent | None" = None,
 ) -> Atlas:
     """Build the structured Atlas from a Reflection (does not render Markdown)."""
-    kept = _dedupe_by_name(reflection._kept_modules())
+    kept, shadowed = _dedupe_by_name(reflection._kept_modules())
     root_path = Path(reflection.graph.root)
     root_name = root_path.name or str(root_path)
-    language = "rust" if any(m.package == "crate" for m in kept) else "python"
+    language = "rust" if any(m.language == "rust" for m in kept) else "python"
     intent_model = load_intent(intent)
 
     metrics = compute_metrics(kept, reflection._group_for)
@@ -291,10 +302,7 @@ def build_atlas_model(
 
     modules: list[AtlasModule] = []
     for m in sorted(kept, key=lambda m: m.name):
-        try:
-            rel = Path(m.path).relative_to(root_path).as_posix()
-        except ValueError:
-            rel = Path(m.path).name
+        rel = _rel_path(m.path, root_path)
         node = mm[m.name]
         entries = sorted({*m.entry_points, *(f"script {s}" for s in scripts.get(m.name, []))})
         modules.append(
@@ -363,6 +371,7 @@ def build_atlas_model(
         cycle_count=len(cycles),
         truncated=len(modules) > max_modules,
         max_modules=max_modules,
+        shadowed_files=[_rel_path(m.path, root_path) for m in shadowed],
         summary=intent_model.summary if intent_model else "",
         components=components,
         component_edges=[
@@ -540,19 +549,26 @@ def _disambiguate(display_of: dict[str, str]) -> dict[str, str]:
     with the shared root package stripped, falling back to the full dotted name.
     """
     clashed = {d for d, n in Counter(display_of.values()).items() if n > 1}
-    if not clashed:
-        return dict(display_of)
     out: dict[str, str] = {}
     for name, display in display_of.items():
         if display not in clashed:
             out[name] = display
             continue
-        stripped = ".".join(name.split(".")[1:]) or name
-        out[name] = stripped
+        out[name] = ".".join(name.split(".")[1:]) or name
     if len(set(out.values())) < len(out):
         for name, display in display_of.items():
             if display in clashed:
                 out[name] = name
+    # A stripped or full name can still equal another module's label (a rename can
+    # produce any text), so finish with a pass that guarantees uniqueness.
+    used: set[str] = set()
+    for name in sorted(out):
+        label, n = out[name], 1
+        while label in used:
+            n += 1
+            label = f"{out[name]} #{n}"
+        used.add(label)
+        out[name] = label
     return out
 
 
@@ -602,17 +618,21 @@ def _root_init(root_path: Path) -> Path | None:
 
 
 def _string_items(value: ast.expr | None) -> list[str]:
-    """String literals of a list / tuple expression, or of `a + b` over such expressions."""
-    if isinstance(value, (ast.List, ast.Tuple)):
-        return [
-            el.value for el in value.elts
-            if isinstance(el, ast.Constant) and isinstance(el.value, str)
-        ]
-    if isinstance(value, ast.BinOp) and isinstance(value.op, ast.Add):
-        return _string_items(value.left) + _string_items(value.right)
-    if isinstance(value, ast.Constant) and isinstance(value.value, str):
-        return [value.value]
-    return []
+    """String literals of a list / tuple expression, or of `a + b` over such expressions, in order."""
+    out: list[str] = []
+    stack = [value]
+    while stack:
+        node = stack.pop()
+        if isinstance(node, (ast.List, ast.Tuple)):
+            out.extend(
+                el.value for el in node.elts
+                if isinstance(el, ast.Constant) and isinstance(el.value, str)
+            )
+        elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+            stack.extend((node.right, node.left))  # left is popped first
+        elif isinstance(node, ast.Constant) and isinstance(node.value, str):
+            out.append(node.value)
+    return out
 
 
 def _is_all(node: ast.expr) -> bool:
@@ -628,9 +648,8 @@ def _public_api(root_path: Path) -> list[str]:
     init = _root_init(root_path)
     if init is None:
         return []
-    try:
-        tree = ast.parse(init.read_text(encoding="utf-8", errors="replace"))
-    except (SyntaxError, ValueError):
+    _, tree = read_and_parse(init)
+    if tree is None:
         return []
     names: list[str] = []
     for node in tree.body:

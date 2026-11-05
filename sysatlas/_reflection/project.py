@@ -31,13 +31,20 @@ def console_scripts(root: Path) -> dict[str, list[str]]:
 def _read_scripts(path: Path) -> dict[str, list[str]]:
     try:
         data = tomllib.loads(path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError):
+    except (OSError, ValueError, RecursionError):  # unreadable, not UTF-8, not TOML (TOMLDecodeError is a ValueError)
         return {}
-    project = data.get("project", {})
+    project = data.get("project")
+    if not isinstance(project, dict):
+        return {}
     out: dict[str, list[str]] = {}
     for table in _SCRIPT_TABLES:
-        for script, target in sorted(project.get(table, {}).items()):
-            module = str(target).split(":")[0].split("[")[0].strip()
+        scripts = project.get(table)
+        if not isinstance(scripts, dict):
+            continue
+        for script, target in sorted(scripts.items()):
+            if not isinstance(target, str):
+                continue
+            module = target.split(":")[0].split("[")[0].strip()
             if module:
                 out.setdefault(module, []).append(script)
     return out

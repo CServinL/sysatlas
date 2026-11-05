@@ -8,6 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from sysatlas._reflection.external import external_roots
 from sysatlas._reflection.resolve import resolve_import
+from sysatlas._reflection.scopes import absolute_from, env_reads, scope_maps, walk_runtime
 
 
 class ClassLink(BaseModel):
@@ -25,6 +26,8 @@ class Module(BaseModel):
 
     name: str
     """Dotted module name relative to scan root (e.g. 'sysatlas._ontology.architecture')."""
+    language: str = "python"
+    """Language of the source file; set by the parser that produced the module."""
     path: str
     """Absolute path on disk."""
     package: str
@@ -80,13 +83,17 @@ def scan(root: str | Path) -> ProjectGraph:
         scan_root = root_path
         files = sorted(p for p in scan_root.rglob("*.py") if "__pycache__" not in p.parts)
 
-    parsed = {p: _read_and_parse(p) for p in files}
+    parsed = {p: read_and_parse(p) for p in files}
     prefix = _namespace_prefix(scan_root, [tree for _, tree in parsed.values() if tree is not None])
     names = {p: _module_name(p, scan_root, prefix) for p in files}
     in_tree_names = set(names.values())
     in_tree_tops = {n.split(".")[0] for n in in_tree_names}
     scan_of = {p: _scan_source(p, names[p], *parsed[p]) for p in files}
-    by_module = {names[p]: s for p, s in scan_of.items()}
+    canonical = {}
+    for p in files:
+        if names[p] not in canonical or _preference(p, scan_of[p].loc) > _preference(*canonical[names[p]]):
+            canonical[names[p]] = (p, scan_of[p].loc)
+    by_module = {name: scan_of[p] for name, (p, _) in canonical.items()}
     models_of = _resolve_models(by_module)
     links_of = _resolve_implementations(by_module)
     modules: list[Module] = []
@@ -119,22 +126,42 @@ def scan(root: str | Path) -> ProjectGraph:
     return ProjectGraph(root=str(scan_root), modules=modules)
 
 
-def _read_and_parse(path: Path) -> tuple[str, ast.Module | None]:
-    """Source text and its AST; the AST is None when the file does not parse."""
-    text = path.read_text(encoding="utf-8", errors="replace")
-    try:
-        return text, ast.parse(text)
-    except (SyntaxError, ValueError):
-        return text, None
+def _preference(path: Path | str, loc: int) -> tuple[bool, int, str]:
+    """Which of two files with the same module name is the module: a package's `__init__.py`
+    (as Python imports it), else the larger file."""
+    return Path(path).name == "__init__.py", loc, str(path)
+
+
+def module_preference(module: "Module") -> tuple[bool, int, str]:
+    """Sort key for choosing between two modules with the same name; the larger key is the module."""
+    return _preference(module.path, module.loc)
+
+
+def read_and_parse(path: Path) -> tuple[str, ast.Module | None]:
+    """Source text and its AST; the AST is None when the file does not parse.
+
+    The bytes are parsed, so a UTF-8 BOM or a `# coding:` declaration is honoured as
+    the interpreter would. If that fails on the encoding alone, the lenient text is tried.
+    Source too deeply nested for the parser (`RecursionError`, `MemoryError`) gives None.
+    """
+    data = path.read_bytes()
+    text = data.decode("utf-8-sig", errors="replace")
+    for source in (data, text):
+        try:
+            return text, ast.parse(source)
+        except (SyntaxError, ValueError, RecursionError, MemoryError):
+            continue
+    return text, None
 
 
 def _namespace_prefix(scan_root: Path, trees: list[ast.Module]) -> str:
     """Name to prefix module names with when scan_root is a package without __init__.py.
 
     A directory such as `prisma/` with no `__init__.py` is a namespace package:
-    its code still imports itself as `prisma.x`. When any file has such an import
-    statement, the directory name is the top-level package, as if `__init__.py`
-    were present. Only real import statements count, not examples in strings.
+    its code still imports itself as `prisma.x`. The evidence is an import statement
+    that names a module which exists under scan_root (`from prisma.server import x`
+    with `server/` or `server.py` present). A bare `import code` or a name that
+    happens to match the directory is not evidence: it may be the standard library.
     """
     name = scan_root.name
     if (scan_root / "__init__.py").exists() or not name.isidentifier():
@@ -142,15 +169,25 @@ def _namespace_prefix(scan_root: Path, trees: list[ast.Module]) -> str:
     if (scan_root / name).is_dir():
         return ""  # a checkout `pkg/` that contains the package `pkg/pkg/`: scan_root is only a container
 
-    def is_own(module: str | None) -> bool:
-        return module is not None and (module == name or module.startswith(name + "."))
+    def exists(parts: list[str]) -> bool:
+        target = scan_root.joinpath(*parts)
+        return bool(parts) and (target.is_dir() or target.with_suffix(".py").is_file())
 
     for tree in trees:
         for node in ast.walk(tree):
-            if isinstance(node, ast.Import) and any(is_own(a.name) for a in node.names):
-                return name
-            if isinstance(node, ast.ImportFrom) and node.level == 0 and is_own(node.module):
-                return name
+            if isinstance(node, ast.Import):
+                if any(
+                    a.name.split(".")[0] == name and exists(a.name.split(".")[1:]) for a in node.names
+                ):
+                    return name
+            elif isinstance(node, ast.ImportFrom) and node.level == 0 and node.module:
+                head, *rest = node.module.split(".")
+                if head != name:
+                    continue
+                if rest and exists(rest):
+                    return name
+                if not rest and any(exists([a.name]) for a in node.names):
+                    return name
     return ""
 
 
@@ -226,26 +263,27 @@ def _scan_source(
     )
     if tree is None:
         return _SourceScan(loc=loc, unparsed=True)
+    try:
+        return _analyze(tree, modname, path.name == "__init__.py", loc, "environ" in text or "getenv" in text)
+    except RecursionError:  # source nested deeper than the interpreter can walk: keep the module visible
+        return _SourceScan(loc=loc, unparsed=True)
 
-    is_package = path.name == "__init__.py"
-    module_aliases, enclosing = _scope_maps(tree, modname, is_package)
+
+def _analyze(tree: ast.Module, modname: str, is_package: bool, loc: int, mentions_env: bool) -> _SourceScan:
+    module_aliases, enclosing = scope_maps(tree, modname, is_package)
 
     def scope(node: ast.AST) -> dict[str, str]:
         """Import bindings visible where `node` (a def or class) is defined."""
         return enclosing.get(id(node), module_aliases)
 
-    nodes = list(_walk_runtime(tree))
+    nodes = list(walk_runtime(tree))
     imports: list[str] = []
-    os_names = {"os"}
-    os_env: dict[str, set[str]] = {"environ": set(), "getenv": set()}
     for node in nodes:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name)
-                if alias.asname and alias.name == "os":
-                    os_names.add(alias.asname)
         elif isinstance(node, ast.ImportFrom):
-            base = _absolute_from(node, modname, is_package)
+            base = absolute_from(node, modname, is_package)
             if base is None:
                 continue
             for alias in node.names:
@@ -255,22 +293,15 @@ def _scan_source(
                 imports.append(f"{base}.{alias.name}" if base else alias.name)
                 if base != modname:
                     imports.append(base)
-                if node.level == 0 and base == "os" and alias.name in os_env:
-                    os_env[alias.name].add(alias.asname or alias.name)
 
     roots = {i.split(".")[0] for i in imports}
     entry_points: list[str] = []
-    env_vars: list[str] = []
     for node in nodes:
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             for dec in node.decorator_list:
                 entry = _decorator_entry(dec, node.name, roots, scope(node))
                 if entry:
                     entry_points.append(entry)
-        else:
-            var = _env_var(node, os_env, os_names)
-            if var:
-                env_vars.append(var)
     if any(isinstance(n, ast.If) and _is_main_guard(n.test) for n in tree.body):
         entry_points.append("main")
 
@@ -292,7 +323,7 @@ def _scan_source(
         functions=[n.name for n in public_functions],
         loc=loc,
         entry_points=entry_points,
-        env_vars=env_vars,
+        env_vars=env_reads(tree) if mentions_env else [],
         undocumented=[
             n.name for n in (*public_classes, *public_functions)
             if not ast.get_docstring(n)
@@ -309,65 +340,6 @@ def _scan_source(
             n.name for n in public_classes if _fluent_method_count(n, scope) >= _FLUENT_MIN_METHODS
         ],
     )
-
-
-def _walk_scope(stmts: list[ast.stmt]):
-    """Statements of one lexical scope, including those inside if / try / with / for / while.
-
-    Yields function and class definitions but does not descend into their
-    bodies, which are scopes of their own. Skips `if TYPE_CHECKING:` bodies.
-    """
-    for node in stmts:
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            yield node
-            continue
-        if isinstance(node, ast.If) and _is_type_checking(node.test):
-            yield from _walk_scope(node.orelse)
-            continue
-        yield node
-        for child in ast.iter_child_nodes(node):
-            if isinstance(child, (ast.stmt, ast.ExceptHandler, ast.match_case)):
-                yield from _walk_scope([child])
-
-
-def _bindings(stmts: list[ast.stmt], modname: str, is_package: bool) -> dict[str, str]:
-    """Local name -> dotted target for the imports in one lexical scope."""
-    out: dict[str, str] = {}
-    for node in _walk_scope(stmts):
-        if isinstance(node, ast.Import):
-            for alias in node.names:
-                if alias.asname:
-                    out[alias.asname] = alias.name
-        elif isinstance(node, ast.ImportFrom):
-            base = _absolute_from(node, modname, is_package)
-            if base is None:
-                continue
-            for alias in node.names:
-                if alias.name != "*":
-                    out[alias.asname or alias.name] = f"{base}.{alias.name}" if base else alias.name
-    return out
-
-
-def _scope_maps(
-    tree: ast.Module, modname: str, is_package: bool
-) -> tuple[dict[str, str], dict[int, dict[str, str]]]:
-    """Module-level import bindings, and for every def / class the bindings visible where it is defined.
-
-    A name bound by an import inside a function does not change what the same
-    name means at module level, so classifying bases and decorators must use
-    the scope they are written in.
-    """
-    module_map = _bindings(tree.body, modname, is_package)
-    enclosing: dict[int, dict[str, str]] = {}
-
-    def visit(stmts: list[ast.stmt], visible: dict[str, str]) -> None:
-        for node in _walk_scope(stmts):
-            if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-                enclosing[id(node)] = visible
-                visit(node.body, {**visible, **_bindings(node.body, modname, is_package)})
-
-    visit(tree.body, module_map)
-    return module_map, enclosing
 
 
 def _is_abstract(cls: ast.ClassDef, scope) -> bool:
@@ -572,86 +544,3 @@ def _is_main_guard(test: ast.expr) -> bool:
     has_name = any(isinstance(n, ast.Name) and n.id == "__name__" for n in pair)
     has_main = any(isinstance(n, ast.Constant) and n.value == "__main__" for n in pair)
     return has_name and has_main
-
-
-def _is_os_attr(node: ast.expr, attr: str, os_names: set[str]) -> bool:
-    return (
-        isinstance(node, ast.Attribute)
-        and node.attr == attr
-        and isinstance(node.value, ast.Name)
-        and node.value.id in os_names
-    )
-
-
-def _literal_str(node: ast.expr | None) -> str | None:
-    if isinstance(node, ast.Constant) and isinstance(node.value, str):
-        return node.value
-    return None
-
-
-def _env_var(node: ast.AST, os_env: dict[str, set[str]], os_names: set[str]) -> str | None:
-    """Literal key of a read: os.getenv(K), os.environ.get(K), os.environ[K] (not stores)."""
-
-    def is_environ(n: ast.expr) -> bool:
-        return _is_os_attr(n, "environ", os_names) or (isinstance(n, ast.Name) and n.id in os_env["environ"])
-
-    if isinstance(node, ast.Call):
-        func = node.func
-        is_getenv = _is_os_attr(func, "getenv", os_names) or (
-            isinstance(func, ast.Name) and func.id in os_env["getenv"]
-        )
-        if is_getenv or (
-            isinstance(func, ast.Attribute) and func.attr == "get" and is_environ(func.value)
-        ):
-            key = node.args[0] if node.args else next(
-                (k.value for k in node.keywords if k.arg == "key"), None
-            )
-            return _literal_str(key)
-    if isinstance(node, ast.Subscript) and isinstance(node.ctx, ast.Load) and is_environ(node.value):
-        return _literal_str(node.slice)
-    return None
-
-
-def _walk_runtime(tree: ast.AST):
-    """Like ast.walk, but skips the body of `if TYPE_CHECKING:` guards.
-
-    Type-only imports are not runtime dependencies, so counting them would
-    invent import cycles the code was deliberately written to avoid.
-    """
-    for node in ast.iter_child_nodes(tree):
-        if isinstance(node, ast.If) and _is_type_checking(node.test):
-            for sub in node.orelse:
-                yield sub
-                yield from _walk_runtime(sub)
-            continue
-        yield node
-        yield from _walk_runtime(node)
-
-
-def _is_type_checking(test: ast.expr) -> bool:
-    return (
-        (isinstance(test, ast.Name) and test.id == "TYPE_CHECKING")
-        or (isinstance(test, ast.Attribute) and test.attr == "TYPE_CHECKING")
-    )
-
-
-def _absolute_from(node: ast.ImportFrom, modname: str, is_package: bool = False) -> str | None:
-    """Resolve a 'from .x import y' relative import to an absolute dotted prefix.
-
-    In a package's `__init__.py` the module name is the package itself, so one
-    leading dot means that package; in a regular module it means the parent.
-    """
-    if node.level == 0:
-        return node.module or ""
-    parts = modname.split(".")
-    up = node.level - 1 if is_package else node.level
-    if up > len(parts):
-        return None
-    base = parts[: len(parts) - up]
-    if node.module:
-        base = base + node.module.split(".")
-    # Empty base: a top-level module doing `from . import x`. Treat it as the
-    # module's own top-level name so the edge is captured.
-    if not base:
-        return parts[0] if parts else ""
-    return ".".join(base)

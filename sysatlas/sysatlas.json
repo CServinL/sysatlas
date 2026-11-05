@@ -54,6 +54,8 @@
     "sysatlas._reflection.project": "reflection",
     "sysatlas._reflection.spec": "reflection",
     "sysatlas._reflection.patterns": "reflection",
+    "sysatlas._reflection.scopes": "reflection",
+    "sysatlas._reflection.configfile": "reflection",
 
     "sysatlas._vendor": "infra"
   },

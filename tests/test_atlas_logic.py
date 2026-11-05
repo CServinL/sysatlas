@@ -5,12 +5,12 @@ import hashlib
 import os
 import subprocess
 import sys
-import tempfile
 import textwrap
 import unittest
 from pathlib import Path
 
 import sysatlas
+from tmpdirs import mkdtemp
 from sysatlas._reflection.atlas import Atlas
 
 REPO = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ _SECTIONS = (
 
 
 def _tree(files: dict[str, str]) -> Path:
-    root = Path(tempfile.mkdtemp()) / "pkg"
+    root = Path(mkdtemp()) / "pkg"
     root.mkdir()
     (root / "__init__.py").write_text("")
     for name, body in files.items():
@@ -177,7 +177,7 @@ class Symbols(unittest.TestCase):
 
 class PublicApi(unittest.TestCase):
     def _api(self, init: str, container: str | None = None) -> list[str]:
-        base = Path(tempfile.mkdtemp())
+        base = Path(mkdtemp())
         root = base / (container or "pkg")
         pkg = root / "pkg" if container else root
         pkg.mkdir(parents=True)
@@ -204,14 +204,14 @@ class PublicApi(unittest.TestCase):
         self.assertEqual(self._api("__all__ = ['a']\n", container="src"), ["a"])
 
     def test_several_packages_in_a_container_are_ambiguous(self) -> None:
-        root = Path(tempfile.mkdtemp()) / "src"
+        root = Path(mkdtemp()) / "src"
         for name in ("one", "two"):
             (root / name).mkdir(parents=True)
             (root / name / "__init__.py").write_text("__all__ = ['x']\n")
         self.assertEqual(sysatlas.reflect(root).to_atlas_model().public_api, [])
 
     def test_annotated_all_is_read(self) -> None:
-        root = Path(tempfile.mkdtemp()) / "pkg"
+        root = Path(mkdtemp()) / "pkg"
         root.mkdir()
         (root / "__init__.py").write_text('__all__: list[str] = ["Foo", "Bar"]\n')
         atlas = sysatlas.reflect(root).to_atlas()
@@ -277,7 +277,7 @@ class SyntaxErrorFile(unittest.TestCase):
 )
 class RustDegrades(unittest.TestCase):
     def test_no_symbol_columns(self) -> None:
-        root = Path(tempfile.mkdtemp()) / "crate" / "src"
+        root = Path(mkdtemp()) / "crate" / "src"
         root.mkdir(parents=True)
         (root / "main.rs").write_text("mod foo;\nuse crate::foo::bar;\nfn main(){bar();}\n")
         (root / "foo.rs").write_text("pub fn bar() {}\n")
@@ -287,7 +287,7 @@ class RustDegrades(unittest.TestCase):
         self.assertNotIn("| purpose |", atlas)
 
     def test_main_and_lib_crate_collision_deduped(self) -> None:
-        root = Path(tempfile.mkdtemp()) / "crate" / "src"
+        root = Path(mkdtemp()) / "crate" / "src"
         root.mkdir(parents=True)
         (root / "main.rs").write_text("fn main() {}\n")
         (root / "lib.rs").write_text("pub fn run() {}\n")

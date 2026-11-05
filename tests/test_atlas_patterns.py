@@ -1,17 +1,17 @@
 """Pattern candidates: structural detectors in the atlas, each with a lookalike that must not fire."""
 from __future__ import annotations
 
-import tempfile
 import textwrap
 import unittest
 from pathlib import Path
 
 import sysatlas
+from tmpdirs import mkdtemp
 from sysatlas._reflection.reflection import Hints
 
 
 def _tree(files: dict[str, str]) -> Path:
-    root = Path(tempfile.mkdtemp()) / "pkg"
+    root = Path(mkdtemp()) / "pkg"
     root.mkdir()
     (root / "__init__.py").write_text("")
     for name, body in files.items():
@@ -220,8 +220,8 @@ class Rendering(unittest.TestCase):
         self.assertIn("pattern_candidates", model.model_dump())
 
 
-class ReviewRegressions(unittest.TestCase):
-    """Defects found in review of the pattern detectors."""
+class DetectorEdgeCases(unittest.TestCase):
+    """Generic and re-exported bases, fluent chains, adapters in one module, event names, layering."""
 
     ABC_BASE = "from abc import ABC, abstractmethod\nclass Source(ABC):\n    @abstractmethod\n    def f(self): ...\n"
 

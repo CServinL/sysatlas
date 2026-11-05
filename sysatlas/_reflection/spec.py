@@ -34,6 +34,7 @@ class ArchitectureSpec(BaseModel):
     layers: list[str] = Field(default_factory=list)
     """Layer names from top to bottom. A layer may depend on itself and on layers below it."""
     components: list[SpecComponent] = Field(default_factory=list)
+    """Declaration order is precedence: a module belongs to the first component whose glob matches it."""
 
     @model_validator(mode="after")
     def _check_references(self) -> "ArchitectureSpec":
@@ -77,8 +78,17 @@ class Conformance(BaseModel):
     unmapped_modules: list[str] = Field(default_factory=list)
     """Modules that no spec component claims, sorted."""
     empty_components: list[str] = Field(default_factory=list)
-    """Spec components that match no module, sorted."""
+    """Spec components whose globs match no module, sorted."""
+    shadowed_components: list[str] = Field(default_factory=list)
+    """Spec components whose globs match modules, all of which an earlier component already owns, sorted."""
+    ambiguous_modules: list[str] = Field(default_factory=list)
+    """Modules matched by more than one spec component (the first one owns it), sorted. Informational."""
     violations: list[SpecViolation] = Field(default_factory=list)
+
+
+def matches_any_glob(name: str, rel_path: str, globs: list[str]) -> bool:
+    """True when a dotted module name or its path under the scan root matches any glob (case-sensitive)."""
+    return any(fnmatch.fnmatchcase(name, g) or fnmatch.fnmatchcase(rel_path, g) for g in globs)
 
 
 def check_conformance(
@@ -90,14 +100,19 @@ def check_conformance(
 
     `modules` is (dotted name, path under the scan root) per kept module and
     `edges` the internal import edges between dotted names. A module belongs to
-    the first spec component, in declared order, whose glob matches it.
+    the first spec component, in declared order, whose glob matches it; modules
+    that match several are listed as ambiguous.
     """
     owner: dict[str, str] = {}
+    ambiguous: list[str] = []
+    matched: set[str] = set()
     for name, rel in sorted(modules):
-        for comp in spec.components:
-            if any(fnmatch.fnmatchcase(name, g) or fnmatch.fnmatchcase(rel, g) for g in comp.modules):
-                owner[name] = comp.name
-                break
+        matching = [c.name for c in spec.components if matches_any_glob(name, rel, c.modules)]
+        matched.update(matching)
+        if matching:
+            owner[name] = matching[0]
+        if len(matching) > 1:
+            ambiguous.append(name)
 
     by_name = {c.name: c for c in spec.components}
     layer_index = {name: i for i, name in enumerate(spec.layers)}
@@ -120,10 +135,15 @@ def check_conformance(
         for (kind, a, b), ex in sorted(found.items())
     ]
     claimed = set(owner.values())
+    unmapped = sorted(n for n, _ in modules if n not in owner)
+    empty = sorted(c.name for c in spec.components if c.name not in matched)
+    shadowed = sorted(c.name for c in spec.components if c.name in matched and c.name not in claimed)
     return Conformance(
-        ok=not violations and len(owner) == len(modules),
+        ok=not (violations or unmapped or empty or shadowed),
         mapped_modules=len(owner),
-        unmapped_modules=sorted(n for n, _ in modules if n not in owner),
-        empty_components=sorted(c.name for c in spec.components if c.name not in claimed),
+        unmapped_modules=unmapped,
+        empty_components=empty,
+        shadowed_components=shadowed,
+        ambiguous_modules=sorted(ambiguous),
         violations=violations,
     )
