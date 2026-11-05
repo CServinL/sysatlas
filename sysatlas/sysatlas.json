@@ -45,6 +45,17 @@
     "sysatlas._reflection.reflection": "reflection",
     "sysatlas._reflection.hints": "reflection",
     "sysatlas._reflection.merge": "reflection",
+    "sysatlas._reflection.metrics": "reflection",
+    "sysatlas._reflection.atlas": "reflection",
+    "sysatlas._reflection.atlas_render": "reflection",
+    "sysatlas._reflection.components": "reflection",
+    "sysatlas._reflection.external": "reflection",
+    "sysatlas._reflection.intent": "reflection",
+    "sysatlas._reflection.project": "reflection",
+    "sysatlas._reflection.spec": "reflection",
+    "sysatlas._reflection.patterns": "reflection",
+    "sysatlas._reflection.scopes": "reflection",
+    "sysatlas._reflection.configfile": "reflection",
 
     "sysatlas._vendor": "infra"
   },

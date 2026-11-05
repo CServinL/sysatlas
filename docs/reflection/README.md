@@ -14,6 +14,7 @@ can produce a usable diagram of its own source, the API works.
 |---|---|---|
 | [`loops.py`](loops.py) → [`loops.html`](loops.html) · [PNG](img/loops.png) | sysatlas as read/write loops around its ontology. Kept as a standalone because it uses the hub strategy, which tells a different story from the module map. | Hand-authored (forward flow), `strategy="hub"`. |
 | [`module-map.py`](module-map.py) → [`module-map.html`](module-map.html) | All views in one HTML: conceptual hub + Python module maps (root, ontology, reflection) + Rust view (placeholder until prisma-desktop grows; live reflection when it has `use crate::` deps). | `sysatlas.reflect()` + `reflect_rust()` + `to_system()` (multi-view). Hints loaded from `sysatlas/sysatlas.json`. |
+| [`atlas.py`](atlas.py) → [`atlas.md`](atlas.md) | Holistic **text** map of sysatlas's architecture — components and dependency tiers, entry points, external systems, data models, per-module purpose + public symbols, import cycles, coupling hotspots. Deterministic (same source → byte-identical), token-cheap, for an LLM to read instead of the whole tree. Keeps the layout/render pipeline in view (unlike `module-map.py`). Component purposes and patterns come from [`intent.json`](intent.json). | `sysatlas.reflect()` + `r.save_atlas(intent=...)`. Hints from `sysatlas/sysatlas.json`. |
 
 ### The conceptual view
 
@@ -46,9 +47,11 @@ shared grammar — *is* the read/write loop.
 ```bash
 python docs/reflection/loops.py        # conceptual view (hand-authored)
 python docs/reflection/module-map.py   # literal module dependency graph
+python docs/reflection/atlas.py        # holistic text digest (atlas.md)
 ```
 
-Re-run `module-map.py` after any module add / remove / rename. The
+Re-run `module-map.py` and `atlas.py` after any module / class / function
+add / remove / rename. The
 `loops.py` view is stable and only needs regenerating when the
 conceptual story changes (new actors, new flow stages). The committed
 `module-map.html` is whitelisted in `.gitignore` so updates show up in

@@ -12,6 +12,7 @@ sysatlas is reachable from here. Future sessions should read this
 | understand what sysatlas is, in 30 seconds | [`../README.md`](../README.md) (elevator pitch) |
 | see working code for every feature | [`demos/`](demos/) |
 | understand the project philosophy | [`design-principles.md`](design-principles.md) |
+| know what sysatlas is *meant* to do (intended design) | [`app-spec.md`](app-spec.md) |
 | know which builder class to use | [`builders.md`](builders.md) |
 | see all supported diagram types and their schemas | [`ontology/README.md`](ontology/README.md) |
 | see how sysatlas relates to ISO 42010 / C4 / ArchiMate / UML / BPMN | [`state-of-the-art.md`](state-of-the-art.md) |
@@ -36,8 +37,10 @@ The full surface exposed from `import sysatlas`:
 | `sysatlas.BPMNMap` | Builder — BPMN process diagram | [`ontology/bpmn.md`](ontology/bpmn.md) §Builder | `sysatlas/bpmn_map.py` |
 | `sysatlas.reflect(path)` | Backward flow — Python AST-scan → `Reflection` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/` |
 | `sysatlas.reflect_rust(path)` | Backward flow — Rust tree-sitter scan → `Reflection` (requires `sysatlas[reflect-rust]`) | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/parser_rust.py` |
-| `sysatlas.Reflection` | Wrapper returned by `reflect()` / `reflect_rust()`; `.to_system_map()`, `.merge_with(overlay)`, `.exclude(...)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
+| `sysatlas.Reflection` | Wrapper returned by `reflect()` / `reflect_rust()`; `.to_system_map()`, `.to_system()`, `.merge_with(overlay)`, `.exclude(...)`, `.to_atlas()` / `.to_atlas_model()` / `.save_atlas(path)` | [`issues/reflection.md`](issues/reflection.md) | `sysatlas/_reflection/reflection.py` |
+| `Reflection.to_atlas(intent=)` | Deterministic Markdown "architecture atlas": token-cheap map of components + tiers, entry points, external systems, data models, env vars, spec conformance, cycles, hotspots, documentation gaps. `intent=` merges a hand/LLM-written overlay. Structured form: `to_atlas_model()` → `Atlas`. | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/atlas.py`, `atlas_render.py`, `components.py`, `metrics.py` |
 | `sysatlas.llm_guide()` / `.llm_guide_path()` | Bundled LLM usage guide (string / path) | `sysatlas/LLM_GUIDE.md` | `sysatlas/__init__.py` |
+| `sysatlas.skill(name)` / `.skill_path(name)` | Bundled Claude Code Skills (string / path): `"sysatlas"` (use the library) and `"sysatlas-document"` (fill atlas gaps) — auto-discovered `.claude/skills/` alternative to the guide | `sysatlas/_skill/<name>/SKILL.md` | `sysatlas/__init__.py` |
 
 Every builder method (`group`, `add_component`, `connect`, `show`,
 `save`, `stakeholder`, `concern`, `viewpoint`, `view`,
@@ -126,6 +129,13 @@ implemented and documented.
 | Three viewer modes (cdn / local / embed) | [`builders.md`](builders.md) §Viewer modes | `sysatlas/_render.py` (`_viewer_tag`), `sysatlas/_vendor.py` |
 | Friendly error when viewer JS fails to load | — | `sysatlas/_render.py` (`_viewer_missing_js`) |
 | Bounded complexity philosophy | [`design-principles.md`](design-principles.md) | — |
+| Architecture atlas (deterministic holistic text map for LLMs) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/atlas.py`, `atlas_render.py` |
+| Component clustering + dependency tiers (cycles merged, single-caller helpers absorbed) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/components.py` |
+| Entry points / env vars / data models / external-system detection | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/parser.py`, `scopes.py`, `external.py`, `project.py` |
+| Architecture spec + conformance check (`architecture` key in hints) | [`app-spec.md`](app-spec.md), [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/spec.py` |
+| Pattern candidates (structural detectors: layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry, repository, event-driven, client/server, commands) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/patterns.py` |
+| Intent overlay (component purposes, patterns, staleness fingerprints) | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/intent.py` |
+| Import-cycle / fan-in-fan-out detection | [`issues/reflection.md`](issues/reflection.md) §M7 | `sysatlas/_reflection/metrics.py` |
 | Multi-view splitting as first-class | [`design-principles.md`](design-principles.md), [`builders.md`](builders.md) §System | `sysatlas/system.py` |
 | `tech=` is metadata-only | [`builders.md`](builders.md) §What `tech=` does | `sysatlas/_render.py` |
 | Debug mode (`show(debug=True)`) | [`builders.md`](builders.md) §Debugging | `sysatlas/_layout.py` |
@@ -138,7 +148,8 @@ implemented and documented.
 sysatlas/
 ├── __init__.py                 — public exports: SystemMap, System, TreeMap,
 │                                  SequenceMap, ERMap, StateMap, ClassMap, BPMNMap,
-│                                  Reflection, reflect, reflect_rust, llm_guide, llm_guide_path
+│                                  Reflection, reflect, reflect_rust, llm_guide, llm_guide_path,
+│                                  skill, skill_path
 ├── system_map.py               — SystemMap builder (single architecture)
 ├── system.py                   — System builder (multi-view AD + traces)
 ├── tree_map.py                 — TreeMap builder
@@ -155,13 +166,24 @@ sysatlas/
 ├── _render.py                  — mxGraph XML emission, HTML shell, badges, stubs, hidden trace + legend layers
 ├── _reflection/
 │   ├── __init__.py
-│   ├── parser.py               — Python AST walk: modules + imports
+│   ├── parser.py               — Python AST walk: modules, imports, docstring, public symbols, LOC
 │   ├── parser_rust.py          — Rust tree-sitter walk: modules + use deps (optional extra)
 │   ├── resolve.py              — import/use string → in-tree module
-│   ├── layers.py               — heuristic layer/group inference
+│   ├── layers.py               — heuristic layer/group inference; canonical LAYER_ORDER
 │   ├── hints.py                — sysatlas.json / sysatlas.yaml loader
 │   ├── merge.py                — round-trip merge with hand-authored overlay
-│   └── reflection.py           — Reflection class; to_system_map / to_system / merge_with
+│   ├── metrics.py              — fan-in/out, import cycles (networkx SCC), cross-package edges
+│   ├── atlas.py                — Atlas model + builder (components, entry points, externals, gaps)
+│   ├── atlas_render.py         — Atlas → deterministic Markdown
+│   ├── components.py           — cluster modules into components, order into dependency tiers
+│   ├── external.py             — import name → external system kind (database, HTTP, queue, ...)
+│   ├── project.py              — [project.scripts] from pyproject.toml
+│   ├── patterns.py             — structural pattern candidates with evidence
+│   ├── scopes.py               — lexical scopes: import bindings and environment reads per scope
+│   ├── configfile.py           — read hints / intent files into models; one ValueError naming the file
+│   ├── spec.py                 — planned architecture (hints `architecture`) + conformance check
+│   ├── intent.py               — intent overlay (purposes, patterns) + staleness fingerprint
+│   └── reflection.py           — Reflection class; to_system_map / to_system / to_atlas / merge_with
 ├── _tree_layout.py             — Reingold-Tilford for TreeMap
 ├── _tree_render.py             — tree-specific draw.io emission
 ├── _sequence_layout.py         — vertical-lifeline placement for SequenceMap
@@ -170,6 +192,9 @@ sysatlas/
 ├── _bpmn_render.py             — BPMN-specific draw.io emission
 ├── _trace_matrix.py            — HTML matrix view-kind for trace links
 ├── _vendor.py                  — draw.io viewer JS download / bundle
+├── _skill/
+│   ├── sysatlas/SKILL.md        — bundled Claude Code Skill: use the library, read the atlas first
+│   └── sysatlas-document/SKILL.md — bundled Claude Code Skill: fill the atlas's documentation gaps
 └── _ontology/
     ├── __init__.py
     ├── architecture.py         — Component, Connection, Layer, Group, ArchitectureDiagram
@@ -191,6 +216,7 @@ sysatlas/
 ```
 docs/
 ├── README.md                   — THIS FILE (full app index)
+├── app-spec.md                 — intended design: purpose, users, capabilities, non-goals
 ├── design-principles.md        — bounded complexity, multi-view, non-negotiables
 ├── state-of-the-art.md         — ISO 42010, C4, ArchiMate, UML, BPMN, layout algorithms
 ├── builders.md                 — when to use each builder + viewer modes + auto behaviours + debugging
@@ -226,7 +252,9 @@ docs/
 ├── reflection/                 — sysatlas diagrams of sysatlas (dog-fooding)
 │   ├── README.md
 │   ├── loops.py / .html / .png — conceptual: read/write loops around the ontology (hub strategy)
-│   └── module-map.py / .html / .png — literal: AST-derived module import graph
+│   ├── module-map.py / .html / .png — literal: AST-derived module import graph
+│   ├── atlas.py / atlas.md     — holistic text map of the architecture (deterministic, committed)
+│   └── intent.json             — component purposes + patterns for the atlas (LLM-written, not generated)
 └── issues/
     └── reflection.md           — backward-flow feature scope, milestones, extras
 ```

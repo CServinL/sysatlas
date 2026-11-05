@@ -5,17 +5,22 @@ This module holds the class.
 """
 from __future__ import annotations
 
-import fnmatch
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 _BOUNDED_COMPLEXITY_LIMIT = 15
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from sysatlas._reflection.layers import infer_group, infer_layer
+from sysatlas._reflection.layers import infer_group, infer_layer, layer_rank
 from sysatlas._reflection.parser import ProjectGraph, scan
+from sysatlas._reflection.spec import ArchitectureSpec, matches_any_glob
 from sysatlas.system_map import SystemMap
+
+if TYPE_CHECKING:
+    from sysatlas._reflection.atlas import Atlas
+    from sysatlas._reflection.intent import Intent
 
 
 class Hints(BaseModel):
@@ -26,6 +31,8 @@ class Hints(BaseModel):
     layer: dict[str, str] = Field(default_factory=dict)
     group: dict[str, str] = Field(default_factory=dict)
     rename: dict[str, str] = Field(default_factory=dict)
+    architecture: ArchitectureSpec | None = None
+    """Intended components and allowed dependencies; the atlas reports where the code departs from it."""
 
 
 class Reflection:
@@ -54,8 +61,9 @@ class Reflection:
         excludes = list(self._hints.exclude) + self._extra_excludes
         kept = []
         for m in self._graph.modules:
-            rel = str(Path(m.path).relative_to(root)) if Path(m.path).is_relative_to(root) else m.path
-            if any(fnmatch.fnmatch(rel, pat) or fnmatch.fnmatch(m.name, pat) for pat in excludes):
+            mod_path = Path(m.path)
+            rel = (mod_path.relative_to(root) if mod_path.is_relative_to(root) else mod_path).as_posix()
+            if matches_any_glob(m.name, rel, excludes):
                 continue
             kept.append(m)
         return kept
@@ -87,12 +95,7 @@ class Reflection:
                 m.group(group)
                 groups_added.add(group)
 
-        _LAYER_TOP_DOWN = ["render", "layout", "edge", "services", "ontology",
-                           "builders", "data", "reflection", "infra", "external"]
-        def _layer_key(mod):
-            l = self._layer_for(mod.name)
-            return _LAYER_TOP_DOWN.index(l) if l in _LAYER_TOP_DOWN else len(_LAYER_TOP_DOWN)
-        for mod in sorted(kept, key=_layer_key):
+        for mod in sorted(kept, key=lambda mod: layer_rank(self._layer_for(mod.name))):
             m.add_component(
                 self._display_name(mod.name),
                 group=self._group_for(mod.name),
@@ -125,6 +128,51 @@ class Reflection:
                 stacklevel=2,
             )
         return m
+
+    def to_atlas(
+        self,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> str:
+        """Return a deterministic Markdown "architecture atlas" of the scanned tree.
+
+        A bounded, token-cheap, diffable map of the architecture: components and
+        their dependency tiers, entry points, external systems, data models,
+        configuration, import cycles, and the per-module digest. Same source
+        tree → identical output. `intent` is an optional JSON file (or dict)
+        with human-written component purposes and patterns, merged in and
+        marked as not generated. If the hints file declares an `architecture`
+        spec, conformance with it is reported. For the structured form use
+        `to_atlas_model()`.
+        """
+        from sysatlas._reflection.atlas import build_atlas
+        return build_atlas(self, title, max_modules=max_modules, intent=intent)
+
+    def to_atlas_model(
+        self,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> "Atlas":
+        """Structured `Atlas` behind `to_atlas()`; JSON via `.model_dump_json()`."""
+        from sysatlas._reflection.atlas import build_atlas_model
+        return build_atlas_model(self, title, max_modules=max_modules, intent=intent)
+
+    def save_atlas(
+        self,
+        path,
+        title: str = "",
+        *,
+        max_modules: int = 80,
+        intent: "str | Path | dict | Intent | None" = None,
+    ) -> str:
+        """Write the Markdown atlas to `path` and return it."""
+        text = self.to_atlas(title, max_modules=max_modules, intent=intent)
+        Path(path).write_text(text, encoding="utf-8")
+        return text
 
     def merge_with(self, overlay: SystemMap, title: str = "") -> SystemMap:
         """Reflect, then apply a user-authored annotation overlay."""

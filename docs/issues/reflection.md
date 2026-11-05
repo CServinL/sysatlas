@@ -76,9 +76,22 @@ m.save("docs/reflection/module-map.html")
 sysatlas/
 └── _reflection/
     ├── __init__.py        — Reflection class, sysatlas.reflect entry point
-    ├── parser.py          — AST walk: modules, imports, classes
+    ├── parser.py          — AST walk: modules, imports, docstring, public symbols, LOC, entry points, models, env reads, abstract classes + implementations, fluent classes. A scan root without `__init__.py` that imports itself by name (namespace package) is named as a package
+    ├── parser_rust.py     — tree-sitter Rust walk (optional extra)
     ├── resolve.py         — import string → in-tree module path
-    ├── layers.py          — heuristic + hints application
+    ├── layers.py          — heuristic + hints application; canonical LAYER_ORDER
+    ├── hints.py           — sysatlas.json / sysatlas.yaml loader
+    ├── metrics.py         — fan-in/out, import cycles, cross-package rollup
+    ├── atlas.py           — Atlas model + builder
+    ├── atlas_render.py    — Atlas → deterministic Markdown
+    ├── components.py      — module clustering into components + dependency tiers
+    ├── external.py        — import name → external system kind
+    ├── project.py         — [project.scripts] from pyproject.toml
+    ├── patterns.py        — structural pattern candidates with evidence
+    ├── scopes.py          — lexical scopes: import bindings and environment reads per scope
+    ├── configfile.py      — read hints / intent files into models; one ValueError naming the file
+    ├── spec.py            — planned architecture + conformance check
+    ├── intent.py          — intent overlay + staleness fingerprint
     └── merge.py           — round-trip merge with a blueprint SystemMap
 ```
 
@@ -120,6 +133,7 @@ invoke.
 | 4 | Round-trip merge (`merge.py`) | ✅ done | Blueprint with `qualities` on one reflected module appears as a badge on the rendered output. |
 | 5 | Reflection demo: `docs/reflection/module-map.py` | ✅ done | Generates `module-map.html` via `to_system()` (multi-view, no complexity warning); README table updated. |
 | 6 | Class granularity (`granularity="class"`) | ⏸ deferred | Optional follow-up; not in this PR. |
+| 7 | Architecture atlas (`Reflection.to_atlas()` / `to_atlas_model()` / `save_atlas()`) | ✅ done | Deterministic Markdown map of the architecture: components (cycles merged, single-caller helpers absorbed, helper absorption and inferred packages are capped at 10 modules; import cycles and hinted groups can be larger) with dependency tiers; entry points (main guard, `[project.scripts]`, routes, CLI, tasks); external systems from imports; data models; env vars; spec conformance when the hints file has `architecture`; per-module digest, cycles, hotspots; "Documentation gaps". "Pattern candidates" (11 structural detectors, each with evidence; state machine, dependency injection and middleware chain are left to the skill). Optional `intent=` overlay (purposes, patterns, fingerprint staleness). Byte-identical across `PYTHONHASHSEED`. Structured `Atlas` model behind it (JSON). Rust degrades gracefully (module names, size and imports only). Two bundled skills: `sysatlas` and `sysatlas-document`. Committed `docs/reflection/atlas.md` + `intent.json` for sysatlas itself, regen via `python docs/reflection/atlas.py`. |
 
 ## Extras landed on the same branch (post-M5)
 
@@ -168,8 +182,52 @@ the feature in anger:
   `tree-sitter-rust>=0.24`). 25 tests in
   `tests/test_reflection_rust_logic.py`.
 
-## Out of scope (for now)
+## Out of scope / follow-up
 
+- **Rust symbol + doc-comment extraction** — `parser_rust.py` fills only
+  structural fields today; `pub fn` / `pub struct` / `pub enum` / `pub trait`
+  and `///` / `//!` docs would remove the atlas column degradation. See
+  `# TODO(atlas):` in `parser_rust.py`.
+- **Rust parity for the architecture facts** — entry points (`fn main`, `[[bin]]`),
+  external crates (`use` of non-`crate::` paths), data models (`#[derive(Serialize)]`),
+  and env reads (`std::env::var`) are Python-only today.
+- **More external-system names** — `external.py` is a fixed table; `urllib` is
+  not classified because its top-level name also covers pure URL parsing.
+- **Component clustering is a heuristic** — it reads import structure only, so a
+  flat package of unrelated modules with no imports between them stays one
+  component per module. `intent.json` and the `architecture` spec are the
+  corrective for that.
+- **Bad configuration fails loudly, bad ancillary files do not** — a malformed
+  `sysatlas.json` / `sysatlas.yaml` or `intent=` file (unreadable, not UTF-8, invalid
+  syntax, wrong shape, or failing validation) raises one `ValueError` that names the
+  file; a `pyproject.toml` that cannot be read or parsed (read only for
+  `[project.scripts]`) is ignored.
+- **A name a scope both imports and assigns** resolves to the import (the
+  `try: import x / except ImportError: x = None` idiom). What such a name means at a
+  given line depends on statement order, which the scope analysis does not follow.
+  `tests/test_scope_oracle.py` checks the rest of the scope rules by running generated
+  programs against recording stand-ins for `os` and `click`.
+- **Spec precedence** — in the `architecture` spec a module belongs to the first
+  component whose glob matches it. A component matching nothing, or only modules an
+  earlier component owns, makes the status "departs from the spec"; a module matched
+  by several components is listed but is not a departure.
+- **Two files with one module name** (`a.py` and `a/__init__.py`) — the package wins,
+  as in Python's import; the other file is listed in the atlas as left out.
+- **Stdlib list comes from the running interpreter** — `external.py` uses
+  `sys.stdlib_module_names`, so a module added to the stdlib in a later Python
+  (e.g. `tomllib`) is listed as a third-party library when the atlas is
+  generated on an older one. Regenerate the committed atlas on one fixed version.
+- **Pattern detectors are narrow by design** — they find the structural shape
+  (abstract class + implementations, `return self` chains, `register*` functions,
+  ...) and miss the same pattern built another way. The skill treats a missing
+  candidate as "look briefly", not "absent".
+- **Class-granularity atlas rows** — pairs with milestone 6.
+- **Rust `main.rs` + `lib.rs` both map to `crate`** — `parser_rust._module_name`
+  collapses them to one dotted name; a crate with both (common for Tauri apps)
+  yields two `Module`s with `name="crate"`. The atlas dedupes defensively
+  (`_dedupe_by_name`); the real fix is to name the binary shim `crate.main`.
+- **Committed `atlas.json`** + published schema; atlas drift check in CI
+  (regenerate, `git diff --exit-code`).
 - Dynamic import detection (plugin systems, `importlib.import_module(...)`).
 - Type-driven connections (call graph, type-hint dependency). Imports
   only.

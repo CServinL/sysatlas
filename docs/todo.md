@@ -55,8 +55,20 @@ complete-ontology round all shipped. Pick from *Advanced backlog* or
 - **Off-page connectors opt-out** ✓ — `edge.no_connector=True` forces
   direct routing even on long-span edges. Used by `StateMap` so
   state-machine diagrams never grow off-page glyphs.
+- **Architecture atlas** ✓ — `Reflection.to_atlas()` /
+  `to_atlas_model()` / `save_atlas()`: a deterministic, token-cheap
+  Markdown map of a repo's architecture (components + dependency tiers,
+  entry points, external systems, data models, env vars, spec
+  conformance, cycles, hotspots, documentation gaps) so an LLM can hold a
+  holistic view without reading the source. Optional `intent=` overlay for
+  purposes and patterns. Two bundled Claude Code skills (`sysatlas`,
+  `sysatlas-document`). Committed `docs/reflection/atlas.md` and
+  `intent.json`. See [`issues/reflection.md`](issues/reflection.md) §M7.
+  Follow-up: Rust parity for entry points / externals / models / env vars,
+  and Rust `pub fn` / `pub struct` / doc-comment extraction in
+  `parser_rust.py`.
 
-## 0.4.0 — draw.io layers as a first-class concept
+## 0.5.0 — draw.io layers as a first-class concept
 
 **Goal**: let diagram authors declare named draw.io layers within a single view,
 each with its own independent routing pass and off-page connectors for
@@ -104,7 +116,7 @@ sm.connect("api", "db")   # cross-dlayer → off-page connectors
 
 ## Advanced backlog
 
-- **Clickable / toggleable layer visibility** — superseded by 0.4.0 above.
+- **Clickable / toggleable layer visibility** — superseded by 0.5.0 above.
 - **Evolve in-house layout engines** — add force-directed, orthogonal
   (TSM/HOLA), and channel-routing variants alongside the existing
   Sugiyama + A\*. Avoid pulling in ELK/DAGRE per the no-external-dep

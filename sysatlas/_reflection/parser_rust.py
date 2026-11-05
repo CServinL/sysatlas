@@ -46,12 +46,17 @@ def scan_rust(root: str | Path) -> ProjectGraph:
             for r in [_resolve(raw_path, modname, in_tree_names)]
             if r
         ]
+        # TODO(atlas): extract `pub fn` / `pub struct` / `pub enum` / `pub trait`
+        # into classes/functions and `///` / `//!` into doc so the atlas gets
+        # full purpose/symbol columns for Rust.
         modules.append(
             Module(
                 name=modname,
+                language="rust",
                 path=str(p),
                 package="crate",
                 imports=sorted(set(resolved)),
+                loc=source.count(b"\n") + 1,
             )
         )
     return ProjectGraph(root=str(src_root), modules=modules)

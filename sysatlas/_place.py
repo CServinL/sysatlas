@@ -1,3 +1,5 @@
+"""Refine node positions inside each layer so strongly connected nodes sit close together.
+"""
 from __future__ import annotations
 
 from collections import defaultdict

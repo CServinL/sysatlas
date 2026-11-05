@@ -48,6 +48,7 @@ _FLOW_STYLE = {
 
 
 def build_bpmn_xml(diagram) -> str:
+    """Lay out a BPMN diagram and return its mxGraph XML."""
     pos, size, pool_rects, lane_rects, routes, all_nodes = compute_bpmn_layout(diagram)
 
     root_el = ET.Element(
@@ -114,6 +115,7 @@ def build_bpmn_xml(diagram) -> str:
 
 
 def render_bpmn(diagram, title: str = "", viewer: str = "cdn") -> str:
+    """Render a BPMN diagram to a self-contained viewer HTML page."""
     xml = build_bpmn_xml(diagram)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)

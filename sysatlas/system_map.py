@@ -1,3 +1,5 @@
+"""Fluent builder for one architecture diagram (`SystemMap`): components, groups, connections, save and show.
+"""
 from __future__ import annotations
 
 from sysatlas._ontology.architecture import (

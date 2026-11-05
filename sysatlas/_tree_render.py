@@ -96,6 +96,7 @@ def _default_fill(kind: str) -> str:
 
 def render_tree(diagram, title: str = "", flavor: str = "generic",
                 viewer: str = "cdn") -> str:
+    """Render a tree diagram in the given flavor to a self-contained viewer HTML page."""
     xml = build_tree_xml(diagram, flavor=flavor)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)

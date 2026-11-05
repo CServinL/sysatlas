@@ -45,6 +45,7 @@ def _actor_fill(kind: str) -> str:
 
 
 def build_sequence_xml(diagram) -> str:
+    """Lay out a sequence diagram and return its mxGraph XML."""
     actor_x, msg_y, activation_rects, frame_rects, lifeline_bottom = compute_sequence_layout(diagram)
 
     root_el = ET.Element(
@@ -141,6 +142,7 @@ def build_sequence_xml(diagram) -> str:
 
 
 def render_sequence(diagram, title: str = "", viewer: str = "cdn") -> str:
+    """Render a sequence diagram to a self-contained viewer HTML page."""
     xml = build_sequence_xml(diagram)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)

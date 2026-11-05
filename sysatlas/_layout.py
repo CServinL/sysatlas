@@ -1,3 +1,5 @@
+"""Layered (Sugiyama-style) node placement and final edge routing for architecture diagrams.
+"""
 from __future__ import annotations
 
 import networkx as nx

@@ -64,6 +64,24 @@ class ScanSysatlas(unittest.TestCase):
         for m in self.graph.modules:
             self.assertNotIn(m.name, m.imports)
 
+    def test_extracts_public_classes(self) -> None:
+        arch = self.by_name["sysatlas._ontology.architecture"]
+        self.assertLessEqual({"Component", "Connection"}, set(arch.classes))
+        self.assertNotIn("_", "".join(c[:1] for c in arch.classes))
+
+    def test_extracts_docstring_line(self) -> None:
+        arch = self.by_name["sysatlas._ontology.architecture"]
+        self.assertTrue(arch.doc)
+        self.assertNotIn("\n", arch.doc)
+        self.assertLessEqual(len(arch.doc), 200)
+
+    def test_counts_loc(self) -> None:
+        self.assertGreater(self.by_name["sysatlas._layout"].loc, 0)
+
+    def test_type_checking_imports_skipped(self) -> None:
+        atlas = self.by_name["sysatlas._reflection.atlas"]
+        self.assertNotIn("sysatlas._reflection.reflection", atlas.imports)
+
 
 if __name__ == "__main__":
     unittest.main()

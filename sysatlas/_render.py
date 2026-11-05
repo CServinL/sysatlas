@@ -1,3 +1,5 @@
+"""Turn laid-out nodes, edges and groups into mxGraph XML and a self-contained viewer HTML page.
+"""
 from __future__ import annotations
 
 import json
@@ -482,6 +484,7 @@ function fitGraph(viewer, container) {
 
 
 def render(nodes, edges, groups, layer_order, strategy, title, debug: bool = False, viewer: str = "cdn") -> str:
+    """Render an architecture diagram to a self-contained viewer HTML page."""
     xml = build_xml(nodes, edges, groups, layer_order, debug=debug, strategy=strategy)
     xml_json = json.dumps(xml)
     config_json = json.dumps(_VIEWER_CONFIG)

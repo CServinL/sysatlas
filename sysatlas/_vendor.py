@@ -1,3 +1,5 @@
+"""Locate or download the draw.io viewer script and cache it under the user's home directory.
+"""
 from __future__ import annotations
 
 import urllib.request

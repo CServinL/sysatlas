@@ -46,6 +46,7 @@ class Frame(BaseModel):
 
 
 class SequenceDiagram(BaseModel):
+    """A UML sequence diagram: actors with lifelines, and the messages between them."""
     model_config = ConfigDict(extra="forbid")
     title: str = ""
     actors: dict[str, Actor] = Field(default_factory=dict)
