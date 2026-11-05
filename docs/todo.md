@@ -68,7 +68,7 @@ complete-ontology round all shipped. Pick from *Advanced backlog* or
   and Rust `pub fn` / `pub struct` / doc-comment extraction in
   `parser_rust.py`.
 
-## 0.4.0 — draw.io layers as a first-class concept
+## 0.5.0 — draw.io layers as a first-class concept
 
 **Goal**: let diagram authors declare named draw.io layers within a single view,
 each with its own independent routing pass and off-page connectors for
@@ -116,7 +116,7 @@ sm.connect("api", "db")   # cross-dlayer → off-page connectors
 
 ## Advanced backlog
 
-- **Clickable / toggleable layer visibility** — superseded by 0.4.0 above.
+- **Clickable / toggleable layer visibility** — superseded by 0.5.0 above.
 - **Evolve in-house layout engines** — add force-directed, orthogonal
   (TSM/HOLA), and channel-routing variants alongside the existing
   Sugiyama + A\*. Avoid pulling in ELK/DAGRE per the no-external-dep

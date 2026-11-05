@@ -91,5 +91,5 @@ Set out in [`design-principles.md`](design-principles.md). In short:
 ## 7. Open items
 
 Tracked in [`todo.md`](todo.md) and [`issues/`](issues/): draw.io layers
-(0.4.0), Rust symbol extraction for the atlas, export interop, and
+(0.5.0), Rust symbol extraction for the atlas, export interop, and
 requirements linking.
