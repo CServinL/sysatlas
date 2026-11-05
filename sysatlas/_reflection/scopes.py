@@ -113,32 +113,77 @@ def import_bindings(stmts: list[ast.stmt], modname: str | None, is_package: bool
     return out
 
 
+def _declarations(stmts: list[ast.stmt]) -> tuple[set[str], set[str]]:
+    """Names a scope declares `global` and `nonlocal`."""
+    declared_global: set[str] = set()
+    declared_nonlocal: set[str] = set()
+    for node in walk_scope(stmts):
+        if isinstance(node, ast.Global):
+            declared_global.update(node.names)
+        elif isinstance(node, ast.Nonlocal):
+            declared_nonlocal.update(node.names)
+    return declared_global, declared_nonlocal
+
+
+def _extend(
+    visible: dict[str, str], stmts: list[ast.stmt], params: Iterable[str], modname: str, is_package: bool
+) -> dict[str, str]:
+    """`visible` as seen inside a scope: its parameters and locals hide inherited bindings, its own imports add to them.
+
+    Names declared `global` or `nonlocal` belong to another scope, so they neither hide nor add.
+    """
+    declared = set().union(*_declarations(stmts))
+    hidden = (_stored_names(stmts) | set(params)) - declared
+    kept = {k: v for k, v in visible.items() if k not in hidden} if visible else visible
+    own = {k: v for k, v in import_bindings(stmts, modname, is_package).items() if k not in declared}
+    return {**kept, **own}
+
+
+def _global_imports(tree: ast.Module, modname: str, is_package: bool) -> dict[str, str]:
+    """Imports a function makes under a `global` declaration; they bind in the module (a lazy-import idiom)."""
+    out: dict[str, str] = {}
+    for fn in ast.walk(tree):
+        if isinstance(fn, _FUNCTIONS):
+            declared_global, _ = _declarations(fn.body)
+            for local, target in import_bindings(fn.body, modname, is_package).items():
+                if local in declared_global:
+                    out.setdefault(local, target)
+    return out
+
+
 def scope_maps(
-    tree: ast.Module, modname: str, is_package: bool
+    tree: ast.Module, modname: str, is_package: bool, mentions_global: bool = True
 ) -> tuple[dict[str, str], dict[int, dict[str, str]]]:
     """Module-level import bindings, and for every def / class the bindings visible where it is defined.
 
-    A class body's own imports are visible to the class body (so to its methods'
-    decorators), but not inside the methods.
+    A name a function binds itself (parameter, local, own import) hides the inherited binding
+    inside it. A class body's own imports are visible to the class body (so to its methods'
+    decorators), but not inside the methods. `mentions_global` can be False when the source has
+    no `global` statement, which skips looking for imports made under one.
     """
     module_map = import_bindings(tree.body, modname, is_package)
+    if mentions_global:
+        for name, target in _global_imports(tree, modname, is_package).items():
+            module_map.setdefault(name, target)
     enclosing: dict[int, dict[str, str]] = {}
-    # (statements, bindings visible to definitions made here, bindings the bodies of those definitions extend)
-    stack: list[tuple[list[ast.stmt], dict[str, str], dict[str, str]]] = [
-        (tree.body, module_map, module_map)
-    ]
+    # (statements, the definition that owns them or None for the module, bindings its bodies inherit)
+    stack: list[tuple[list[ast.stmt], ast.AST | None, dict[str, str]]] = [(tree.body, None, module_map)]
     while stack:
-        stmts, here, for_bodies = stack.pop()
+        stmts, owner, inherited = stack.pop()
+        here = for_bodies = None  # worked out on the first definition in these statements, if there is one
         for node in walk_scope(stmts):
             if not isinstance(node, _SCOPE_NODES):
                 continue
+            if here is None:
+                if owner is None:
+                    here = for_bodies = module_map
+                elif isinstance(owner, ast.ClassDef):
+                    here, for_bodies = _extend(inherited, owner.body, (), modname, is_package), inherited
+                else:
+                    params = [a.arg for a in _params(owner.args)]
+                    here = for_bodies = _extend(inherited, owner.body, params, modname, is_package)
             enclosing[id(node)] = here
-            own = import_bindings(node.body, modname, is_package)
-            if isinstance(node, ast.ClassDef):
-                stack.append((node.body, {**for_bodies, **own}, for_bodies))
-            else:
-                inner = {**for_bodies, **own}
-                stack.append((node.body, inner, inner))
+            stack.append((node.body, node, for_bodies))
     return module_map, enclosing
 
 
@@ -147,10 +192,12 @@ def scope_maps(
 
 class _Scope(NamedTuple):
     """Names bound in one scope, mapped to their environment role ("os", "environ", "getenv"),
-    or None when bound to something else (a parameter, a local, an unrelated import)."""
+    or None when bound to something else (a parameter, a local, an unrelated import).
+    `global_names` are declared `global` here: they resolve in the module scope."""
 
     names: dict[str, str | None]
     is_class: bool = False
+    global_names: frozenset[str] = frozenset()
 
 
 def _walrus_targets(node: ast.AST) -> set[str]:
@@ -201,15 +248,12 @@ def _params(args: ast.arguments) -> list[ast.arg]:
 
 def _scope_of(stmts: list[ast.stmt], params: Iterable[str] = (), is_class: bool = False) -> _Scope:
     names: dict[str, str | None] = dict.fromkeys((*_stored_names(stmts), *params))
-    declared: set[str] = set()  # `global x` / `nonlocal x`: the name belongs to another scope
-    for node in walk_scope(stmts):
-        if isinstance(node, (ast.Global, ast.Nonlocal)):
-            declared.update(node.names)
+    declared_global, declared_nonlocal = _declarations(stmts)
     for local, target in import_bindings(stmts, None, False).items():
         names[local] = _ROLES.get(target)
-    for name in declared:
+    for name in declared_global | declared_nonlocal:  # these names belong to another scope
         names.pop(name, None)
-    return _Scope(names, is_class)
+    return _Scope(names, is_class, frozenset(declared_global))
 
 
 def _global_roles(tree: ast.Module) -> dict[str, str | None]:
@@ -228,6 +272,8 @@ def _global_roles(tree: ast.Module) -> dict[str, str | None]:
 
 def _role(chain: tuple[_Scope, ...], name: str) -> str | None:
     for scope in reversed(chain):
+        if name in scope.global_names:
+            return chain[0].names.get(name)  # `global x` goes straight to the module, past any enclosing function
         if name in scope.names:
             return scope.names[name]
     return None

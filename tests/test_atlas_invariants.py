@@ -21,7 +21,7 @@ from sysatlas._reflection.spec import ArchitectureSpec
 SEEDS = range(150)
 ROOT_NAMES = ("pkg", "code", "crate", "src", "big", "app")
 SEGMENTS = ("a", "b", "sub", "big", "extra", "util", "x", "core", "io", "main")
-GROUPS = ("big", "big.sub", "sub", "core", "g", "extra", "pkg")
+GROUPS = ("big", "big.sub", "sub", "core", "g", "extra", "pkg", "util (pkg.util)", "a (pkg.a)", "x (pkg.x)")
 LAYERS = ("edge", "services", "data", "infra", "zzz", "render")
 
 

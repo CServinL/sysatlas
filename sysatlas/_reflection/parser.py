@@ -264,13 +264,19 @@ def _scan_source(
     if tree is None:
         return _SourceScan(loc=loc, unparsed=True)
     try:
-        return _analyze(tree, modname, path.name == "__init__.py", loc, "environ" in text or "getenv" in text)
+        return _analyze(
+            tree, modname, path.name == "__init__.py", loc,
+            mentions_env="environ" in text or "getenv" in text,
+            mentions_global="global" in text,
+        )
     except RecursionError:  # source nested deeper than the interpreter can walk: keep the module visible
         return _SourceScan(loc=loc, unparsed=True)
 
 
-def _analyze(tree: ast.Module, modname: str, is_package: bool, loc: int, mentions_env: bool) -> _SourceScan:
-    module_aliases, enclosing = scope_maps(tree, modname, is_package)
+def _analyze(
+    tree: ast.Module, modname: str, is_package: bool, loc: int, mentions_env: bool, mentions_global: bool
+) -> _SourceScan:
+    module_aliases, enclosing = scope_maps(tree, modname, is_package, mentions_global)
 
     def scope(node: ast.AST) -> dict[str, str]:
         """Import bindings visible where `node` (a def or class) is defined."""

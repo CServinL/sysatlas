@@ -220,17 +220,28 @@ def _absorb_private_helpers(
 
 
 def _unique_names(blocks: dict[str, _Block], degree: Counter[str]) -> dict[str, _Block]:
-    """Keep a clashing name on the biggest block; qualify the others with their lead module."""
+    """Keep a clashing name on the biggest block; qualify the others with their lead module.
+
+    A qualified name can itself equal another block's name (a declared group may be called
+    anything), so each replacement is checked against every name in use and numbered if taken.
+    """
     by_name: dict[str, list[str]] = {}
     for key in sorted(blocks):
         by_name.setdefault(blocks[key].name, []).append(key)
-    for name, keys in by_name.items():
+    used = set(by_name)
+    for name in sorted(by_name):
+        keys = by_name[name]
         if len(keys) < 2:
             continue
         keys.sort(key=lambda k: (-len(blocks[k].members), k))
         for key in keys[1:]:
             lead = min(blocks[key].members, key=lambda m: (-degree[m], m))
-            blocks[key].name = f"{name} ({lead})"
+            candidate, n = f"{name} ({lead})", 1
+            while candidate in used:
+                n += 1
+                candidate = f"{name} ({lead}) #{n}"
+            used.add(candidate)
+            blocks[key].name = candidate
     return blocks
 
 

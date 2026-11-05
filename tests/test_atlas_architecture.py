@@ -1097,6 +1097,122 @@ class RobustnessAndStatus(unittest.TestCase):
         self.assertEqual(model.shadowed_files, ["a.py"])
 
 
+class ShadowingAndNaming(unittest.TestCase):
+    """A name a scope binds itself hides the inherited one; global and nonlocal resolve elsewhere; generated names stay unique."""
+
+    def _model(self, files: dict[str, str], hints: Hints | None = None):
+        return _reflect(_tree(files), hints).to_atlas_model()
+
+    def _module(self, model, name: str):
+        return next(m for m in model.modules if m.name == f"pkg.{name}")
+
+    def test_a_generated_component_name_never_equals_an_existing_one(self) -> None:
+        files = {"util/a.py": "X = 1\n", "util/b.py": "X = 1\n", "util.py": "X = 1\n", "x.py": "X = 1\n"}
+        # `util` clashes (a group and a module); the module's qualified name is `util (pkg.util)`,
+        # which a declared group may already use
+        model = self._model(files, Hints(group={"pkg.x": "util (pkg.util)"}))
+        names = [c.name for c in model.components]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertEqual(sum(c.module_count for c in model.components), model.module_count)
+        self.assertIn("util (pkg.util)", names)
+
+    def test_a_parameter_hides_an_inherited_import_alias(self) -> None:
+        model = self._model({
+            "f.py": """
+                import click
+                from click import command as cmd
+
+                def build(cmd):
+                    @cmd
+                    def from_parameter(): ...
+                    return from_parameter
+
+                def uses_import():
+                    @cmd
+                    def from_import(): ...
+                    return from_import
+            """,
+        })
+        self.assertEqual(self._module(model, "f").entry_points, ["cli from_import"])
+
+    def test_a_local_assignment_hides_an_inherited_import_alias(self) -> None:
+        model = self._model({
+            "f.py": """
+                import click
+                from click import command as cmd
+
+                def build():
+                    cmd = make_decorator()
+                    @cmd
+                    def from_local(): ...
+
+                class C:
+                    cmd = other
+                    @cmd
+                    def from_class_attribute(self): ...
+            """,
+        })
+        self.assertEqual(self._module(model, "f").entry_points, [])
+
+    def test_a_function_own_import_still_applies_and_a_global_import_reaches_the_module(self) -> None:
+        model = self._model({
+            "f.py": """
+                import click
+
+                def build(cmd):
+                    from click import command as cmd
+
+                    @cmd
+                    def own_import(): ...
+
+                def init():
+                    global late
+                    from click import command as late
+
+                @late
+                def after_global(): ...
+            """,
+        })
+        self.assertEqual(self._module(model, "f").entry_points, ["cli after_global", "cli own_import"])
+
+    def test_global_resolves_in_the_module_past_an_enclosing_parameter(self) -> None:
+        model = self._model({
+            "e.py": """
+                from os import environ
+
+                def outer(environ):
+                    def inner():
+                        global environ
+                        return environ.get("TOKEN")
+                    def shadowed():
+                        return environ.get("PARAM_NOT_CONFIG")
+                    return inner, shadowed
+            """,
+        })
+        self.assertEqual([v.name for v in model.env_vars], ["TOKEN"])
+
+    def test_nonlocal_resolves_in_the_enclosing_function(self) -> None:
+        model = self._model({
+            "e.py": """
+                from os import environ
+
+                def outer(environ):
+                    def inner():
+                        nonlocal environ
+                        return environ["PARAM_NOT_CONFIG"]
+                    return inner
+
+                def outer2():
+                    from os import environ as environ
+                    def inner():
+                        nonlocal environ
+                        return environ["ENCLOSING_IMPORT"]
+                    return inner
+            """,
+        })
+        self.assertEqual([v.name for v in model.env_vars], ["ENCLOSING_IMPORT"])
+
+
 class UnboundedSections(unittest.TestCase):
     """Every section of the Markdown stays bounded, however big the repo."""
 
