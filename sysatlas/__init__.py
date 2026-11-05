@@ -37,7 +37,7 @@ __all__ = [
     "skill",
     "skill_path",
 ]
-__version__ = "0.3.4"
+__version__ = "0.4.0"
 
 _LLM_GUIDE = Path(__file__).parent / "LLM_GUIDE.md"
 _SKILLS = Path(__file__).parent / "_skill"
