@@ -202,6 +202,11 @@ the feature in anger:
   syntax, wrong shape, or failing validation) raises one `ValueError` that names the
   file; a `pyproject.toml` that cannot be read or parsed (read only for
   `[project.scripts]`) is ignored.
+- **A name a scope both imports and assigns** resolves to the import (the
+  `try: import x / except ImportError: x = None` idiom). What such a name means at a
+  given line depends on statement order, which the scope analysis does not follow.
+  `tests/test_scope_oracle.py` checks the rest of the scope rules by running generated
+  programs against recording stand-ins for `os` and `click`.
 - **Spec precedence** — in the `architecture` spec a module belongs to the first
   component whose glob matches it. A component matching nothing, or only modules an
   earlier component owns, makes the status "departs from the spec"; a module matched

@@ -1175,6 +1175,24 @@ class ShadowingAndNaming(unittest.TestCase):
         })
         self.assertEqual(self._module(model, "f").entry_points, ["cli after_global", "cli own_import"])
 
+    def test_a_global_name_resolves_to_the_modules_alias_past_an_enclosing_parameter(self) -> None:
+        model = self._model({
+            "f.py": """
+                import click
+                from click import command as cmd
+
+                def outer(cmd):
+                    def inner():
+                        global cmd
+                        @cmd
+                        def from_module(): ...
+                    @cmd
+                    def from_parameter(): ...
+                    return inner, from_parameter
+            """,
+        })
+        self.assertEqual(self._module(model, "f").entry_points, ["cli from_module"])
+
     def test_global_resolves_in_the_module_past_an_enclosing_parameter(self) -> None:
         model = self._model({
             "e.py": """

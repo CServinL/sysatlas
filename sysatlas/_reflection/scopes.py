@@ -126,15 +126,27 @@ def _declarations(stmts: list[ast.stmt]) -> tuple[set[str], set[str]]:
 
 
 def _extend(
-    visible: dict[str, str], stmts: list[ast.stmt], params: Iterable[str], modname: str, is_package: bool
+    visible: dict[str, str],
+    stmts: list[ast.stmt],
+    params: Iterable[str],
+    modname: str,
+    is_package: bool,
+    module_map: dict[str, str],
 ) -> dict[str, str]:
     """`visible` as seen inside a scope: its parameters and locals hide inherited bindings, its own imports add to them.
 
-    Names declared `global` or `nonlocal` belong to another scope, so they neither hide nor add.
+    Names declared `global` or `nonlocal` belong to another scope, so they neither hide nor add:
+    a `global` name is looked up in the module's bindings (past any enclosing function's
+    parameter or import of the same name), a `nonlocal` name in the inherited ones.
     """
-    declared = set().union(*_declarations(stmts))
+    declared_global, declared_nonlocal = _declarations(stmts)
+    declared = declared_global | declared_nonlocal
     hidden = (_stored_names(stmts) | set(params)) - declared
-    kept = {k: v for k, v in visible.items() if k not in hidden} if visible else visible
+    kept = {k: v for k, v in visible.items() if k not in hidden}
+    for name in declared_global:
+        kept.pop(name, None)
+        if name in module_map:
+            kept[name] = module_map[name]
     own = {k: v for k, v in import_bindings(stmts, modname, is_package).items() if k not in declared}
     return {**kept, **own}
 
@@ -178,10 +190,10 @@ def scope_maps(
                 if owner is None:
                     here = for_bodies = module_map
                 elif isinstance(owner, ast.ClassDef):
-                    here, for_bodies = _extend(inherited, owner.body, (), modname, is_package), inherited
+                    here, for_bodies = _extend(inherited, owner.body, (), modname, is_package, module_map), inherited
                 else:
                     params = [a.arg for a in _params(owner.args)]
-                    here = for_bodies = _extend(inherited, owner.body, params, modname, is_package)
+                    here = for_bodies = _extend(inherited, owner.body, params, modname, is_package, module_map)
             enclosing[id(node)] = here
             stack.append((node.body, node, for_bodies))
     return module_map, enclosing

@@ -28,7 +28,7 @@ A component is a cluster of modules that acts as one unit: modules that import e
 | `tree_map` | 0 | builders | 1 (48 loc) | logic×1 | Fluent builder for trees, org charts and mind maps. Hands layout and rendering to the tree pipeline. | _render, diagram-types, tree-pipeline | — |
 | `bpmn-pipeline` | 1 | layout | 2 (286 loc) | logic×2 | Lays out BPMN diagrams (pools, lanes, events, gateways) and writes their mxGraph XML. Has its own layout; does not use the layered engine. | _render, diagram-types | — |
 | `configfile` | 1 | reflection | 1 (18 loc) | logic×1 | Reads a configuration file the user maintains (hints, intent) into a validated model. Any failure becomes one ValueError that names the fil… | — | — |
-| `parser` | 1 | reflection | 2 (784 loc) | logic×2 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
+| `parser` | 1 | reflection | 2 (796 loc) | logic×2 | Reads Python source with ast, without importing it, and records each module's imports, symbols, docstring, entry points, data models and en… | external, resolve | — |
 | `patterns` | 1 | reflection | 1 (281 loc) | logic×1 | Finds the structural footprint of architectural patterns (layered, pipeline, ports and adapters, strategy, facade, fluent builder, registry… | external | — |
 | `project` | 1 | reflection | 1 (42 loc) | logic×1 | Reads the console scripts declared in the nearest pyproject.toml. | — | — |
 | `sequence-pipeline` | 1 | layout | 2 (226 loc) | logic×2 | Lays out UML sequence diagrams (lifelines, messages, activations) and writes their mxGraph XML. Has its own layout; does not use the layere… | _render | — |
